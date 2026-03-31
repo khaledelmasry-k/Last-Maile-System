@@ -9,6 +9,7 @@ import { LogisticsProvider } from './context/LogisticsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Layout } from './components/Layout';
+import { canAccessRoute } from './config/rbac';
 
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
 const DispatchPortal = lazy(() => import('./pages/DispatchPortal').then((m) => ({ default: m.DispatchPortal })));
@@ -35,24 +36,43 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const RoleRoute = ({ path, children }: { path: string; children: React.ReactNode }) => {
+  const { user } = useAuth();
+  if (!canAccessRoute(user?.role, path)) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+};
+
+const defaultRouteByRole = {
+  Admin: '/admin',
+  Dispatcher: '/dispatch',
+  Courier: '/courier',
+  Finance: '/finance',
+  CS: '/cs',
+  Warehouse: '/warehouse',
+} as const;
+
 const AppRoutes = () => {
   const { user } = useAuth();
+  const defaultRoute = user?.role ? defaultRouteByRole[user.role] : '/';
 
   return (
     <Suspense fallback={<RouteFallback />}>
       <Routes>
-        <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+        <Route path="/login" element={user ? <Navigate to={defaultRoute} replace /> : <Login />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="map" element={<LiveMap />} />
-          <Route path="dispatch" element={<DispatchPortal />} />
-          <Route path="courier" element={<CourierApp />} />
-          <Route path="receive" element={<ReceiveReturns />} />
-          <Route path="finance" element={<Finance />} />
-          <Route path="cs" element={<CustomerService />} />
-          <Route path="performance" element={<Performance />} />
-          <Route path="warehouse" element={<Warehouse />} />
-          <Route path="roles" element={<RolesPermissions />} />
+          <Route index element={<Navigate to={defaultRoute} replace />} />
+          <Route path="admin" element={<RoleRoute path='/admin'><AdminDashboard /></RoleRoute>} />
+          <Route path="map" element={<RoleRoute path='/map'><LiveMap /></RoleRoute>} />
+          <Route path="dispatch" element={<RoleRoute path='/dispatch'><DispatchPortal /></RoleRoute>} />
+          <Route path="courier" element={<RoleRoute path='/courier'><CourierApp /></RoleRoute>} />
+          <Route path="receive" element={<RoleRoute path='/receive'><ReceiveReturns /></RoleRoute>} />
+          <Route path="finance" element={<RoleRoute path='/finance'><Finance /></RoleRoute>} />
+          <Route path="cs" element={<RoleRoute path='/cs'><CustomerService /></RoleRoute>} />
+          <Route path="performance" element={<RoleRoute path='/performance'><Performance /></RoleRoute>} />
+          <Route path="warehouse" element={<RoleRoute path='/warehouse'><Warehouse /></RoleRoute>} />
+          <Route path="roles" element={<RoleRoute path='/roles'><RolesPermissions /></RoleRoute>} />
           <Route path="*" element={<div className="p-8 text-gray-900 dark:text-white font-mono">Module under construction...</div>} />
         </Route>
       </Routes>

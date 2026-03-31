@@ -5,18 +5,19 @@ import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { canAccessRoute } from '../config/rbac';
 
 const navItems = [
-  { name: 'Admin Overview', path: '/', icon: LayoutDashboard, roles: ['Admin'] },
-  { name: 'Live Tracking', path: '/map', icon: Map, roles: ['Admin', 'Dispatcher'] },
-  { name: 'Dispatch Portal', path: '/dispatch', icon: Send, roles: ['Admin', 'Dispatcher'] },
-  { name: 'Courier App', path: '/courier', icon: Truck, roles: ['Admin', 'Courier'] },
-  { name: 'Receive & Returns', path: '/receive', icon: Package, roles: ['Admin', 'Warehouse'] },
-  { name: 'Finance & COD', path: '/finance', icon: DollarSign, roles: ['Admin', 'Finance'] },
-  { name: 'Customer Service', path: '/cs', icon: HeadphonesIcon, roles: ['Admin', 'CS'] },
-  { name: 'Performance', path: '/performance', icon: BarChart3, roles: ['Admin'] },
-  { name: 'Warehouse', path: '/warehouse', icon: Warehouse, roles: ['Admin', 'Warehouse'] },
-  { name: 'Roles & Permissions', path: '/roles', icon: Shield, roles: ['Admin'] },
+  { name: 'Admin Overview', path: '/admin', icon: LayoutDashboard },
+  { name: 'Live Tracking', path: '/map', icon: Map },
+  { name: 'Dispatch Portal', path: '/dispatch', icon: Send },
+  { name: 'Courier App', path: '/courier', icon: Truck },
+  { name: 'Receive & Returns', path: '/receive', icon: Package },
+  { name: 'Finance & COD', path: '/finance', icon: DollarSign },
+  { name: 'Customer Service', path: '/cs', icon: HeadphonesIcon },
+  { name: 'Performance', path: '/performance', icon: BarChart3 },
+  { name: 'Warehouse', path: '/warehouse', icon: Warehouse },
+  { name: 'Roles & Permissions', path: '/roles', icon: Shield },
 ];
 
 export const Layout = () => {
@@ -26,7 +27,7 @@ export const Layout = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const currentRole = user?.role || 'Admin';
-  const visibleNavItems = navItems.filter((item) => item.roles.includes(currentRole));
+  const visibleNavItems = navItems.filter((item) => canAccessRoute(currentRole, item.path));
 
   const toggleLanguage = () => {
     const nextLang = i18n.language === 'en' ? 'ar' : 'en';
