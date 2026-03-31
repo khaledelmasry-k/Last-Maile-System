@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { z } from 'zod';
 
 const app = express();
 const PORT = 3000;
@@ -32,6 +33,7 @@ type Shipment = {
   codAmount: number;
   assignedTo: string | null;
   timeline: { status: ShipmentStatus; timestamp: string; note: string }[];
+  deletedAt?: string | null;
 };
 type AuditLog = { id: string; at: string; actorId: string; actorEmail: string; action: string; targetType: string; targetId: string; payload?: unknown };
 type RefreshSession = { id: string; userId: string; tokenHash: string; expiresAt: string; createdAt: string; revokedAt?: string | null };
@@ -192,6 +194,41 @@ function validateEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6).max(128),
+  role: z.enum(['Admin', 'Dispatcher', 'Courier', 'Finance', 'CS', 'Warehouse']),
+});
+
+const refreshSchema = z.object({ refreshToken: z.string().min(20) });
+const logoutSchema = z.object({ refreshToken: z.string().min(20).optional() });
+const assignSchema = z.object({ courierId: z.string().min(3).max(50) });
+const statusSchema = z.object({
+  status: z.enum(['AtStation', 'Assigned', 'OutForDelivery', 'Delivered', 'Failed', 'Rescheduled', 'ReturnedToStation', 'Lost']),
+  note: z.string().max(250).optional(),
+});
+const shipmentsQuerySchema = z.object({
+  status: z.enum(['AtStation', 'Assigned', 'OutForDelivery', 'Delivered', 'Failed', 'Rescheduled', 'ReturnedToStation', 'Lost']).optional(),
+  search: z.string().max(100).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+const auditQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  actorId: z.string().max(64).optional(),
+  action: z.string().max(64).optional(),
+});
+
+function parseOrThrow<T>(schema: z.ZodSchema<T>, input: unknown, status = 400): T {
+  const parsed = schema.safeParse(input);
+  if (!parsed.success) {
+    const err = new Error(parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')) as Error & { status?: number };
+    err.status = status;
+    throw err;
+  }
+  return parsed.data;
+}
+
 function assert(condition: boolean, code: number, message: string) {
   if (!condition) {
     const err = new Error(message) as Error & { status?: number };
@@ -263,9 +300,8 @@ app.get('/api/health', (_req, res) => {
 
 app.post('/api/auth/login', (req, res, next) => {
   try {
-    const { email, password, role } = req.body || {};
-    assert(typeof email === 'string' && validateEmail(email), 400, 'Valid email is required');
-    assert(typeof password === 'string' && password.length >= 6, 400, 'Password must be at least 6 chars');
+    const { email, password, role } = parseOrThrow(loginSchema, req.body || {});
+    assert(validateEmail(email), 400, 'Valid email is required');
     assert(isValidRole(role), 400, 'Invalid role');
 
     const db = readDB();
@@ -300,8 +336,7 @@ app.post('/api/auth/login', (req, res, next) => {
 
 app.post('/api/auth/refresh', (req, res, next) => {
   try {
-    const { refreshToken } = req.body || {};
-    assert(typeof refreshToken === 'string' && refreshToken.length > 20, 400, 'refreshToken required');
+    const { refreshToken } = parseOrThrow(refreshSchema, req.body || {});
 
     const payload = jwt.verify(refreshToken, JWT_SECRET) as Pick<TokenPayload, 'id' | 'email' | 'role'>;
     const db = readDB();
@@ -322,7 +357,7 @@ app.post('/api/auth/refresh', (req, res, next) => {
 });
 
 app.post('/api/auth/logout', auth, (req: AuthedRequest, res) => {
-  const { refreshToken } = req.body || {};
+  const { refreshToken } = parseOrThrow(logoutSchema, req.body || {});
   const db = readDB();
   if (typeof refreshToken === 'string') {
     for (const s of db.refreshSessions) {
@@ -342,12 +377,13 @@ app.get('/api/auth/me', auth, (req: AuthedRequest, res) => {
 
 app.get('/api/shipments', auth, (req: AuthedRequest, res) => {
   const db = readDB();
-  const status = String(req.query.status || '').trim();
-  const search = String(req.query.search || '').trim().toLowerCase();
-  const page = Math.max(1, Number(req.query.page || 1));
-  const limit = Math.min(100, Math.max(1, Number(req.query.limit || 20)));
+  const q = parseOrThrow(shipmentsQuerySchema, req.query || {});
+  const status = q.status || '';
+  const search = String(q.search || '').trim().toLowerCase();
+  const page = q.page;
+  const limit = q.limit;
 
-  let rows = [...db.shipments];
+  let rows = db.shipments.filter((s) => !s.deletedAt);
 
   if (req.user?.role === 'Courier') {
     rows = rows.filter((s) => !!s.assignedTo);
@@ -386,12 +422,11 @@ app.get('/api/couriers', auth, (_req, res) => {
 app.post('/api/shipments/:id/assign', auth, requireRole(['Dispatcher', 'Admin']), (req: AuthedRequest, res, next) => {
   try {
     const { id } = req.params;
-    const { courierId } = req.body || {};
-    assert(typeof courierId === 'string' && !!courierId.trim(), 400, 'courierId is required');
+    const { courierId } = parseOrThrow(assignSchema, req.body || {});
 
     const db = readDB();
     const shipment = db.shipments.find((s) => s.id === id);
-    assert(!!shipment, 404, 'Shipment not found');
+    assert(!!shipment && !shipment.deletedAt, 404, 'Shipment not found');
     const courier = db.couriers.find((c) => c.id === courierId && c.active);
     assert(!!courier, 400, 'Courier not found or inactive');
     assert(['AtStation', 'Assigned'].includes(shipment!.status), 409, 'Shipment is not assignable now');
@@ -411,15 +446,14 @@ app.post('/api/shipments/:id/assign', auth, requireRole(['Dispatcher', 'Admin'])
 app.post('/api/shipments/:id/status', auth, (req: AuthedRequest, res, next) => {
   try {
     const { id } = req.params;
-    const { status, note } = req.body || {};
+    const { status, note } = parseOrThrow(statusSchema, req.body || {});
 
     assert(isValidStatus(status), 400, 'Invalid shipment status');
     assert(statusActionRoles[status].includes(req.user!.role), 403, `Role ${req.user!.role} cannot set status ${status}`);
-    if (note !== undefined) assert(typeof note === 'string' && note.length <= 250, 400, 'note must be a short string');
 
     const db = readDB();
     const shipment = db.shipments.find((s) => s.id === id);
-    assert(!!shipment, 404, 'Shipment not found');
+    assert(!!shipment && !shipment.deletedAt, 404, 'Shipment not found');
 
     const from = shipment!.status;
     assert(allowedTransitions[from].includes(status), 409, `Invalid transition ${from} -> ${status}`);
@@ -437,10 +471,30 @@ app.post('/api/shipments/:id/status', auth, (req: AuthedRequest, res, next) => {
   }
 });
 
+app.delete('/api/shipments/:id', auth, requireRole(['Admin']), (req: AuthedRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const db = readDB();
+    const shipment = db.shipments.find((s) => s.id === id);
+    assert(!!shipment && !shipment.deletedAt, 404, 'Shipment not found');
+
+    shipment!.deletedAt = new Date().toISOString();
+    pushAudit(db, req.user!, 'SOFT_DELETE_SHIPMENT', 'shipment', shipment!.id, { status: shipment!.status });
+    writeDB(db);
+
+    res.json({ ok: true, shipmentId: shipment!.id, deletedAt: shipment!.deletedAt });
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.get('/api/audit-logs', auth, requireRole(['Admin']), (req, res) => {
   const db = readDB();
-  const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
-  res.json(db.auditLogs.slice(0, limit));
+  const q = parseOrThrow(auditQuerySchema, req.query || {});
+  let rows = [...db.auditLogs];
+  if (q.actorId) rows = rows.filter((r) => r.actorId === q.actorId);
+  if (q.action) rows = rows.filter((r) => r.action === q.action);
+  res.json(rows.slice(0, q.limit));
 });
 
 app.use((err: Error & { status?: number }, req: express.Request, res: express.Response, _next: express.NextFunction) => {
