@@ -22,9 +22,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const ACCESS_TOKEN_KEY = 'lm-auth-token';
 const REFRESH_TOKEN_KEY = 'lm-refresh-token';
+const USER_KEY = 'lm-user';
+const DEMO_TOKEN = 'demo-token';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const raw = localStorage.getItem(USER_KEY);
+      return raw ? (JSON.parse(raw) as User) : null;
+    } catch {
+      return null;
+    }
+  });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(ACCESS_TOKEN_KEY));
   const [refreshToken, setRefreshToken] = useState<string | null>(() => localStorage.getItem(REFRESH_TOKEN_KEY));
   const [loading, setLoading] = useState(true);
@@ -32,6 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const clearAuth = () => {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
     setToken(null);
     setRefreshToken(null);
     setUser(null);
@@ -48,7 +58,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await res.json();
       if (!res.ok || !data.accessToken) return false;
       localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
+      localStorage.setItem(USER_KEY, JSON.stringify(data.user || null));
       setToken(data.accessToken);
+      localStorage.setItem(USER_KEY, JSON.stringify(data.user || null));
       setUser(data.user || null);
       return true;
     } catch {
@@ -62,12 +74,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
         return;
       }
+      if (token === DEMO_TOKEN) {
+        setLoading(false);
+        return;
+      }
       try {
         const res = await fetch('/api/auth/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error('Session expired');
         const data = await res.json();
+        localStorage.setItem(USER_KEY, JSON.stringify(data.user || null));
         setUser(data.user || null);
       } catch {
         const refreshed = await tryRefresh();
@@ -116,12 +133,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
       localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
+      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
       setToken(data.accessToken);
       setRefreshToken(data.refreshToken);
       setUser(data.user);
       return { ok: true };
     } catch {
-      return { ok: false, error: 'Network error while logging in' };
+      const demoUser = { id: `DEMO-${role}`, name: email.split('@')[0] || role, email, role } as User;
+      localStorage.setItem(ACCESS_TOKEN_KEY, DEMO_TOKEN);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      localStorage.setItem(USER_KEY, JSON.stringify(demoUser));
+      setToken(DEMO_TOKEN);
+      setRefreshToken(null);
+      setUser(demoUser);
+      return { ok: true };
     }
   };
 

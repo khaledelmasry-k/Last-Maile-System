@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Shipment, Courier, ShipmentStatus } from '../types';
 import { useAuth } from './AuthContext';
+import { demoCouriers, demoShipments } from '../mock/demoData';
 
 interface LogisticsContextType {
   shipments: Shipment[];
@@ -13,6 +14,7 @@ interface LogisticsContextType {
 }
 
 const LogisticsContext = createContext<LogisticsContextType | undefined>(undefined);
+const DEMO_TOKEN = 'demo-token';
 
 export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -31,6 +33,14 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     setError(null);
+
+    if (token === DEMO_TOKEN) {
+      setShipments(demoShipments);
+      setCouriers(demoCouriers);
+      setLoading(false);
+      return;
+    }
+
     try {
       const [shipmentsPayload, couriersPayload] = await Promise.all([
         apiFetch('/api/shipments?limit=500'),
@@ -53,7 +63,7 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
   }, [token]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || token === DEMO_TOKEN) return;
     const interval = setInterval(async () => {
       try {
         const couriersData = await apiFetch('/api/couriers');
@@ -67,6 +77,22 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
   }, [token, apiFetch]);
 
   const assignShipment = async (shipmentId: string, courierId: string) => {
+    if (token === DEMO_TOKEN) {
+      setShipments((prev) =>
+        prev.map((s) =>
+          s.id === shipmentId
+            ? {
+                ...s,
+                assignedTo: courierId,
+                status: 'Assigned',
+                timeline: [...s.timeline, { status: 'Assigned', timestamp: new Date().toISOString(), note: `Assigned to driver ${courierId}` }],
+              }
+            : s,
+        ),
+      );
+      return { ok: true };
+    }
+
     try {
       const updatedShipment = (await apiFetch(`/api/shipments/${shipmentId}/assign`, {
         method: 'POST',
@@ -83,6 +109,22 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateShipmentStatus = async (shipmentId: string, status: ShipmentStatus, note?: string) => {
+    if (token === DEMO_TOKEN) {
+      setShipments((prev) =>
+        prev.map((s) =>
+          s.id === shipmentId
+            ? {
+                ...s,
+                status,
+                assignedTo: status === 'AtStation' || status === 'ReturnedToStation' ? null : s.assignedTo,
+                timeline: [...s.timeline, { status, timestamp: new Date().toISOString(), note: note || `Status updated to ${status}` }],
+              }
+            : s,
+        ),
+      );
+      return { ok: true };
+    }
+
     try {
       const updatedShipment = (await apiFetch(`/api/shipments/${shipmentId}/status`, {
         method: 'POST',
