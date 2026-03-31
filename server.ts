@@ -15,7 +15,8 @@ const PORT = 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'last-maile-dev-secret';
 const ACCESS_TOKEN_TTL = '20m';
 const REFRESH_TOKEN_TTL = '14d';
-const DATA_FILE = path.join(process.cwd(), 'server-data.json');
+const RUNTIME_DIR = path.join(process.cwd(), '.runtime');
+const DATA_FILE = path.join(RUNTIME_DIR, 'server-data.json');
 
 type Role = 'Admin' | 'Dispatcher' | 'Courier' | 'Finance' | 'CS' | 'Warehouse';
 type ShipmentStatus = 'AtStation' | 'Assigned' | 'OutForDelivery' | 'Delivered' | 'Failed' | 'Rescheduled' | 'ReturnedToStation' | 'Lost';
@@ -110,6 +111,10 @@ const initialDB: DB = {
   auditLogs: [],
   refreshSessions: [],
 };
+
+if (!fs.existsSync(RUNTIME_DIR)) {
+  fs.mkdirSync(RUNTIME_DIR, { recursive: true });
+}
 
 if (!fs.existsSync(DATA_FILE)) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(initialDB, null, 2));
