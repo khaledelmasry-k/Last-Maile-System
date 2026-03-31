@@ -29,7 +29,7 @@ export const Login = () => {
             <Truck className="text-orange-500 w-8 h-8" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
-            Express<span className="text-orange-500">Logistics</span>
+            LastMile<span className="text-orange-500">Logistics</span>
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-mono uppercase tracking-widest">{t('Login')}</p>
         </div>

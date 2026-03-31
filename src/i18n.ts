@@ -145,7 +145,7 @@ const resources = {
       "Inventory": "Inventory",
       "Live Map": "Live Map",
       "CS": "CS",
-      "Last-Mile System": "Last-Mile System",
+      "LastMileLogistics": "LastMileLogistics",
       "User": "User"
     }
   },
@@ -292,7 +292,7 @@ const resources = {
       "Inventory": "المخزون",
       "Live Map": "الخريطة المباشرة",
       "CS": "خدمة العملاء",
-      "Last-Mile System": "نظام الميل الأخير",
+      "LastMileLogistics": "لاست مايل لوجيستكس",
       "User": "مستخدم"
     }
   }

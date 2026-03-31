@@ -40,9 +40,9 @@ export const Layout = () => {
         <div className="p-6 border-b border-gray-200 dark:border-[#2a2a2a]">
           <h1 className="text-xl font-bold tracking-tighter flex items-center gap-2">
             <Truck className="text-orange-500" />
-            <span>Express<span className="text-orange-500">Logistics</span></span>
+            <span>LastMile<span className="text-orange-500">Logistics</span></span>
           </h1>
-          <p className="text-xs text-gray-500 mt-1 uppercase tracking-widest font-mono">{t('Last-Mile System')}</p>
+          <p className="text-xs text-gray-500 mt-1 uppercase tracking-widest font-mono">{t('LastMileLogistics')}</p>
         </div>
         
         <nav className="flex-1 overflow-y-auto py-4">
