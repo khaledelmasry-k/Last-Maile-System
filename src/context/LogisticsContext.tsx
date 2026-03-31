@@ -19,18 +19,7 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
   const [couriers, setCouriers] = useState<Courier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { token } = useAuth();
-
-  const authedFetch = async (url: string, options: RequestInit = {}) => {
-    const headers = new Headers(options.headers || {});
-    if (token) headers.set('Authorization', `Bearer ${token}`);
-    const response = await fetch(url, { ...options, headers });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(payload.error || 'Request failed');
-    }
-    return payload;
-  };
+  const { token, apiFetch } = useAuth();
 
   const fetchData = async () => {
     if (!token) {
@@ -43,9 +32,12 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      const [shipmentsData, couriersData] = await Promise.all([authedFetch('/api/shipments'), authedFetch('/api/couriers')]);
-      setShipments(shipmentsData);
-      setCouriers(couriersData);
+      const [shipmentsPayload, couriersPayload] = await Promise.all([
+        apiFetch('/api/shipments?limit=500'),
+        apiFetch('/api/couriers'),
+      ]);
+      setShipments((shipmentsPayload as { data: Shipment[] }).data || []);
+      setCouriers((couriersPayload as Courier[]) || []);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to fetch data';
       setError(msg);
@@ -64,24 +56,23 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
     if (!token) return;
     const interval = setInterval(async () => {
       try {
-        const couriersData = await authedFetch('/api/couriers');
-        setCouriers(couriersData);
+        const couriersData = await apiFetch('/api/couriers');
+        setCouriers((couriersData as Courier[]) || []);
       } catch {
         // silent polling failure
       }
     }, 3000);
 
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, apiFetch]);
 
   const assignShipment = async (shipmentId: string, courierId: string) => {
     try {
-      const updatedShipment = await authedFetch(`/api/shipments/${shipmentId}/assign`, {
+      const updatedShipment = (await apiFetch(`/api/shipments/${shipmentId}/assign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ courierId }),
-      });
+      })) as Shipment;
       setShipments((prev) => prev.map((s) => (s.id === shipmentId ? updatedShipment : s)));
       return { ok: true };
     } catch (err) {
@@ -93,11 +84,11 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
 
   const updateShipmentStatus = async (shipmentId: string, status: ShipmentStatus, note?: string) => {
     try {
-      const updatedShipment = await authedFetch(`/api/shipments/${shipmentId}/status`, {
+      const updatedShipment = (await apiFetch(`/api/shipments/${shipmentId}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, note }),
-      });
+      })) as Shipment;
       setShipments((prev) => prev.map((s) => (s.id === shipmentId ? updatedShipment : s)));
       return { ok: true };
     } catch (err) {
