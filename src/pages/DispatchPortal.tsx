@@ -1,0 +1,145 @@
+import React, { useState } from 'react';
+import { useLogistics } from '../context/LogisticsContext';
+import { Search, MapPin, User, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+
+export const DispatchPortal = () => {
+  const { shipments, couriers, assignShipment } = useLogistics();
+  const { t } = useTranslation();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCourier, setSelectedCourier] = useState<string>('');
+
+  const unassignedShipments = shipments.filter(s => s.status === 'AtStation' && !s.assignedTo);
+  const assignedShipments = shipments.filter(s => s.assignedTo && s.status === 'Assigned');
+
+  const handleAssign = (shipmentId: string) => {
+    if (!selectedCourier) return alert(t('Please select a courier first'));
+    assignShipment(shipmentId, selectedCourier);
+  };
+
+  return (
+    <div className="p-8 text-gray-900 dark:text-white h-full flex flex-col transition-colors duration-200">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold font-sans tracking-tight">{t('Dispatch Portal')}</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1 font-mono text-sm uppercase">{t('Assign Shipments to Couriers')}</p>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0">
+        {/* Left Column: Unassigned Shipments */}
+        <div className="lg:col-span-2 flex flex-col bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#2a2a2a] rounded-xl overflow-hidden shadow-sm">
+          <div className="p-5 border-b border-gray-200 dark:border-[#2a2a2a] flex justify-between items-center bg-gray-50 dark:bg-[#0a0a0a]">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <span className="bg-orange-500 text-white dark:text-black text-xs font-bold px-2 py-0.5 rounded-full">
+                {unassignedShipments.length}
+              </span>
+              {t('Unassigned Shipments')}
+            </h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
+              <input 
+                type="text" 
+                placeholder={t('Search tracking or zone...')} 
+                className="bg-white dark:bg-[#1a1a1a] border border-gray-300 dark:border-[#333] rounded-lg pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:border-orange-500 transition-colors text-gray-900 dark:text-white"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {unassignedShipments.map(shipment => (
+              <div key={shipment.id} className="bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333] rounded-lg p-4 flex items-center justify-between hover:border-orange-500/50 transition-colors">
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <span className="font-mono font-bold text-orange-500 dark:text-orange-400">{shipment.trackingNumber}</span>
+                    <span className="text-xs bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded">{t('COD')}: {shipment.codAmount} {t('EGP')}</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                    <span className="flex items-center gap-1"><User size={14} /> {shipment.customerName}</span>
+                    <span className="flex items-center gap-1"><MapPin size={14} /> {shipment.address}</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => handleAssign(shipment.id)}
+                  className="bg-orange-500 hover:bg-orange-600 text-white dark:text-black font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+                >
+                  {t('Assign')}
+                </button>
+              </div>
+            ))}
+            {unassignedShipments.length === 0 && (
+              <div className="text-center py-12 text-gray-500 font-mono">
+                {t('No unassigned shipments at the station.')}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Couriers & Active Assignments */}
+        <div className="flex flex-col gap-6">
+          {/* Courier Selection */}
+          <div className="bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#2a2a2a] rounded-xl p-5 shadow-sm">
+            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">{t('Select Courier')}</h2>
+            <div className="space-y-2">
+              {couriers.map(courier => (
+                <label 
+                  key={courier.id} 
+                  className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                    selectedCourier === courier.id 
+                      ? 'bg-orange-50 dark:bg-orange-500/10 border-orange-500 text-orange-600 dark:text-orange-500' 
+                      : 'bg-gray-50 dark:bg-[#1a1a1a] border-gray-200 dark:border-[#333] text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="radio" 
+                      name="courier" 
+                      value={courier.id}
+                      checked={selectedCourier === courier.id}
+                      onChange={() => setSelectedCourier(courier.id)}
+                      className="hidden"
+                    />
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                      selectedCourier === courier.id ? 'border-orange-500' : 'border-gray-300 dark:border-gray-500'
+                    }`}>
+                      {selectedCourier === courier.id && <div className="w-2 h-2 bg-orange-500 rounded-full" />}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{courier.name}</p>
+                      <p className="text-xs opacity-70 font-mono">{courier.vehicle}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-bold">{shipments.filter(s => s.assignedTo === courier.id && s.status !== 'Delivered').length}</p>
+                    <p className="text-[10px] uppercase tracking-wider opacity-70">{t('Active')}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Recently Assigned */}
+          <div className="bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#2a2a2a] rounded-xl flex-1 flex flex-col overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-gray-200 dark:border-[#2a2a2a] bg-gray-50 dark:bg-[#0a0a0a]">
+              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Recently Assigned')}</h2>
+            </div>
+            <div className="p-4 overflow-y-auto space-y-3 flex-1">
+              {assignedShipments.slice(0, 5).map(shipment => {
+                const courier = couriers.find(c => c.id === shipment.assignedTo);
+                return (
+                  <div key={shipment.id} className="flex items-start gap-3 text-sm">
+                    <CheckCircle2 className="text-green-500 shrink-0 mt-0.5" size={16} />
+                    <div>
+                      <p className="font-mono text-gray-700 dark:text-gray-300">{shipment.trackingNumber}</p>
+                      <p className="text-xs text-gray-500">{t('Assigned to')} <span className="text-orange-500 dark:text-orange-400">{courier?.name}</span></p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
