@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "ai-studio-applet-webapp-28cc5"
-  }
+  },
+  "targets": {
+    "ai-studio-applet-webapp-28cc5": {
+      "hosting": {
+        "lastmile": [
+          "lastmile-logistics"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
