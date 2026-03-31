@@ -2,18 +2,24 @@ import React from 'react';
 import { useLogistics } from '../context/LogisticsContext';
 import { PackageX, RefreshCcw, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
+import { hasPermission } from '../config/rbac';
 
 export const ReceiveReturns = () => {
   const { shipments, updateShipmentStatus } = useLogistics();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const canManageReturns = hasPermission(user?.role, 'returns.manage');
   
   const returns = shipments.filter(s => ['Failed', 'Rescheduled', 'ReturnedToStation'].includes(s.status));
 
   const handleProcessReturn = (id: string) => {
+    if (!canManageReturns) return;
     updateShipmentStatus(id, 'ReturnedToStation', 'Processed return at station');
   };
 
   const handleReDispatch = (id: string) => {
+    if (!canManageReturns) return;
     updateShipmentStatus(id, 'AtStation', 'Ready for re-dispatch');
   };
 
@@ -59,14 +65,16 @@ export const ReceiveReturns = () => {
                     {shipment.status !== 'ReturnedToStation' && (
                       <button 
                         onClick={() => handleProcessReturn(shipment.id)}
-                        className="flex-1 bg-gray-200 dark:bg-[#333] hover:bg-gray-300 dark:hover:bg-[#444] text-gray-900 dark:text-white text-xs font-bold py-2 rounded transition-colors"
+                        disabled={!canManageReturns}
+                        className="flex-1 bg-gray-200 dark:bg-[#333] hover:bg-gray-300 dark:hover:bg-[#444] disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white text-xs font-bold py-2 rounded transition-colors"
                       >
                         {t('Process Return')}
                       </button>
                     )}
                     <button 
                       onClick={() => handleReDispatch(shipment.id)}
-                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white dark:text-black text-xs font-bold py-2 rounded transition-colors"
+                      disabled={!canManageReturns}
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white dark:text-black text-xs font-bold py-2 rounded transition-colors"
                     >
                       {t('Re-Dispatch')}
                     </button>

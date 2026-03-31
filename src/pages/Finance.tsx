@@ -2,10 +2,14 @@ import React from 'react';
 import { useLogistics } from '../context/LogisticsContext';
 import { DollarSign, FileText, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
+import { hasPermission } from '../config/rbac';
 
 export const Finance = () => {
   const { shipments, couriers } = useLogistics();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const canManageFinance = hasPermission(user?.role, 'finance.manage');
   
   const delivered = shipments.filter(s => s.status === 'Delivered');
   const totalCollected = delivered.reduce((sum, s) => sum + s.codAmount, 0);
@@ -65,7 +69,7 @@ export const Finance = () => {
                       <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{t('To Collect')}</p>
                       <p className="font-mono font-bold text-2xl text-green-600 dark:text-green-500">{courierTotal} {t('EGP')}</p>
                     </div>
-                    <button className="bg-green-600 hover:bg-green-700 dark:hover:bg-green-500 text-white font-bold px-6 py-3 rounded-lg transition-colors">
+                    <button disabled={!canManageFinance} className="bg-green-600 hover:bg-green-700 dark:hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-6 py-3 rounded-lg transition-colors">
                       {t('Settle')}
                     </button>
                   </div>

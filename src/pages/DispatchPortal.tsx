@@ -2,10 +2,14 @@ import React, { useState } from 'react';
 import { useLogistics } from '../context/LogisticsContext';
 import { Search, MapPin, User, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
+import { hasPermission } from '../config/rbac';
 
 export const DispatchPortal = () => {
   const { shipments, couriers, assignShipment } = useLogistics();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const canDispatch = hasPermission(user?.role, 'dispatch.manage');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourier, setSelectedCourier] = useState<string>('');
   const [error, setError] = useState('');
@@ -20,6 +24,7 @@ export const DispatchPortal = () => {
 
   const handleAssign = async (shipmentId: string) => {
     setError('');
+    if (!canDispatch) return setError('Not allowed for your role');
     if (!selectedCourier) return setError(t('Please select a courier first'));
     const result = await assignShipment(shipmentId, selectedCourier);
     if (!result.ok) setError(result.error || 'Assign failed');
@@ -70,7 +75,8 @@ export const DispatchPortal = () => {
                 </div>
                 <button 
                   onClick={() => handleAssign(shipment.id)}
-                  className="bg-orange-500 hover:bg-orange-600 text-white dark:text-black font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+                  disabled={!canDispatch}
+                  className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white dark:text-black font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
                 >
                   {t('Assign')}
                 </button>

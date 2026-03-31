@@ -4,11 +4,13 @@ import { MapPin, Phone, Package, CheckCircle, XCircle, Clock, Navigation, User }
 import { ShipmentStatus } from '../types';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { hasPermission } from '../config/rbac';
 
 export const CourierApp = () => {
   const { shipments, couriers, updateShipmentStatus } = useLogistics();
   const { t } = useTranslation();
   const { user } = useAuth();
+  const canExecuteCourierActions = hasPermission(user?.role, 'courier.execute');
   const [activeCourierId, setActiveCourierId] = useState<string>('DRV-001'); // Mock login
   const [selectedShipment, setSelectedShipment] = useState<string | null>(null);
   const [note, setNote] = useState('');
@@ -20,7 +22,7 @@ export const CourierApp = () => {
   const completed = myShipments.filter(s => ['Delivered', 'Failed', 'Rescheduled'].includes(s.status));
 
   const handleStatusUpdate = (status: ShipmentStatus) => {
-    if (!selectedShipment) return;
+    if (!selectedShipment || !canExecuteCourierActions) return;
     updateShipmentStatus(selectedShipment, status, note);
     setSelectedShipment(null);
     setNote('');
@@ -97,7 +99,8 @@ export const CourierApp = () => {
                   {shipment.status === 'Assigned' ? (
                     <button 
                       onClick={(e) => { e.stopPropagation(); handleStatusUpdate('OutForDelivery'); }}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
+                      disabled={!canExecuteCourierActions}
+                      className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
                     >
                       <Navigation size={18} />
                       {t('Start Delivery')}
@@ -115,21 +118,24 @@ export const CourierApp = () => {
                       <div className="grid grid-cols-2 gap-2">
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleStatusUpdate('Delivered'); }}
-                          className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
+                          disabled={!canExecuteCourierActions}
+                          className="bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
                         >
                           <CheckCircle size={18} />
                           {t('Delivered')}
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleStatusUpdate('Failed'); }}
-                          className="bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
+                          disabled={!canExecuteCourierActions}
+                          className="bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
                         >
                           <XCircle size={18} />
                           {t('Failed')}
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleStatusUpdate('Rescheduled'); }}
-                          className="col-span-2 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
+                          disabled={!canExecuteCourierActions}
+                          className="col-span-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
                         >
                           <Clock size={18} />
                           {t('Reschedule')}
