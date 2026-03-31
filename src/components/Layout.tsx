@@ -28,8 +28,9 @@ export const Layout = () => {
   const visibleNavItems = navItems.filter(item => item.roles.includes(currentRole));
 
   const toggleLanguage = () => {
-    i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en');
-    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+    const nextLang = i18n.language === 'en' ? 'ar' : 'en';
+    i18n.changeLanguage(nextLang);
+    document.documentElement.dir = nextLang === 'ar' ? 'rtl' : 'ltr';
   };
 
   return (

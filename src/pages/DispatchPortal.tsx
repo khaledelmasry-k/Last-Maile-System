@@ -8,13 +8,21 @@ export const DispatchPortal = () => {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourier, setSelectedCourier] = useState<string>('');
+  const [error, setError] = useState('');
 
-  const unassignedShipments = shipments.filter(s => s.status === 'AtStation' && !s.assignedTo);
+  const term = searchTerm.trim().toLowerCase();
+  const unassignedShipments = shipments.filter((s) => {
+    if (!(s.status === 'AtStation' && !s.assignedTo)) return false;
+    if (!term) return true;
+    return [s.trackingNumber, s.customerName, s.address].some((v) => String(v).toLowerCase().includes(term));
+  });
   const assignedShipments = shipments.filter(s => s.assignedTo && s.status === 'Assigned');
 
-  const handleAssign = (shipmentId: string) => {
-    if (!selectedCourier) return alert(t('Please select a courier first'));
-    assignShipment(shipmentId, selectedCourier);
+  const handleAssign = async (shipmentId: string) => {
+    setError('');
+    if (!selectedCourier) return setError(t('Please select a courier first'));
+    const result = await assignShipment(shipmentId, selectedCourier);
+    if (!result.ok) setError(result.error || 'Assign failed');
   };
 
   return (
@@ -24,6 +32,7 @@ export const DispatchPortal = () => {
         <p className="text-gray-500 dark:text-gray-400 mt-1 font-mono text-sm uppercase">{t('Assign Shipments to Couriers')}</p>
       </header>
 
+      {error ? <p className="mb-3 text-sm text-red-500">{error}</p> : null}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0">
         {/* Left Column: Unassigned Shipments */}
         <div className="lg:col-span-2 flex flex-col bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#2a2a2a] rounded-xl overflow-hidden shadow-sm">

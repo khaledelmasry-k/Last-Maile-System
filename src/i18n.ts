@@ -309,4 +309,6 @@ i18n
     }
   });
 
+document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+
 export default i18n;

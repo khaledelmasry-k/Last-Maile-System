@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, UserRole } from '../context/AuthContext';
 import { Truck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export const Login = () => {
   const { login } = useAuth();
   const { t } = useTranslation();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('Admin');
+  const [email, setEmail] = useState('admin@express.com');
+  const [password, setPassword] = useState('Admin@123');
+  const [role, setRole] = useState<UserRole>('Admin');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && password) {
-      login(email, role);
-    }
+    setSubmitting(true);
+    setError('');
+    const result = await login(email.trim(), password, role);
+    if (!result.ok) setError(result.error || 'Login failed');
+    setSubmitting(false);
   };
 
   return (
@@ -27,16 +31,12 @@ export const Login = () => {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
             Express<span className="text-orange-500">Logistics</span>
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-mono uppercase tracking-widest">
-            {t('Login')}
-          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-mono uppercase tracking-widest">{t('Login')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('Email')}
-            </label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Email')}</label>
             <input
               type="email"
               value={email}
@@ -48,9 +48,7 @@ export const Login = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('Password')}
-            </label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Password')}</label>
             <input
               type="password"
               value={password}
@@ -62,12 +60,10 @@ export const Login = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('Simulate Role')}
-            </label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Simulate Role')}</label>
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value)}
+              onChange={(e) => setRole(e.target.value as UserRole)}
               className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-300 dark:border-[#333] text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             >
               <option value="Admin">{t('Admin')}</option>
@@ -79,11 +75,10 @@ export const Login = () => {
             </select>
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition-colors"
-          >
-            {t('Sign In')}
+          {error ? <p className="text-sm text-red-500">{error}</p> : null}
+
+          <button type="submit" disabled={submitting} className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors">
+            {submitting ? 'Signing in...' : t('Sign In')}
           </button>
         </form>
       </div>

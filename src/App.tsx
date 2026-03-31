@@ -22,7 +22,10 @@ import { RolesPermissions } from './pages/RolesPermissions';
 import { Login } from './pages/Login';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) {
+    return <div className="p-8 text-gray-900 dark:text-white font-mono">Loading session...</div>;
+  }
   if (!user) {
     return <Navigate to="/login" replace />;
   }
