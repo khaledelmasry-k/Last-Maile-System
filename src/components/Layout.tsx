@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Send, Truck, Package, DollarSign, HeadphonesIcon, BarChart3, Warehouse, Map, Shield, LogOut, Moon, Sun, Globe } from 'lucide-react';
+import { LayoutDashboard, Send, Truck, Package, DollarSign, HeadphonesIcon, BarChart3, Warehouse, Map, Shield, LogOut, Moon, Sun, Globe, Menu, X } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -23,9 +23,10 @@ export const Layout = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { t, i18n } = useTranslation();
-  
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
   const currentRole = user?.role || 'Admin';
-  const visibleNavItems = navItems.filter(item => item.roles.includes(currentRole));
+  const visibleNavItems = navItems.filter((item) => item.roles.includes(currentRole));
 
   const toggleLanguage = () => {
     const nextLang = i18n.language === 'en' ? 'ar' : 'en';
@@ -33,18 +34,41 @@ export const Layout = () => {
     document.documentElement.dir = nextLang === 'ar' ? 'rtl' : 'ltr';
   };
 
+  const closeMobileNav = () => setMobileNavOpen(false);
+
   return (
     <div className="flex h-screen bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white overflow-hidden font-sans transition-colors duration-200">
+      {/* Mobile header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 px-3 border-b border-gray-200 dark:border-[#2a2a2a] bg-gray-50 dark:bg-[#141414] flex items-center justify-between">
+        <button onClick={() => setMobileNavOpen((v) => !v)} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2a2a]">
+          {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+        <div className="text-sm font-bold tracking-tight">LastMileLogistics</div>
+        <button onClick={logout} className="p-2 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10">
+          <LogOut size={18} />
+        </button>
+      </div>
+
+      {/* Mobile backdrop */}
+      {mobileNavOpen ? <div className="lg:hidden fixed inset-0 z-30 bg-black/40" onClick={closeMobileNav} /> : null}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-50 dark:bg-[#141414] border-r border-gray-200 dark:border-[#2a2a2a] flex flex-col transition-colors duration-200">
+      <aside
+        className={clsx(
+          'fixed lg:static top-14 lg:top-0 left-0 z-40 h-[calc(100vh-56px)] lg:h-screen w-72 lg:w-64 bg-gray-50 dark:bg-[#141414] border-r border-gray-200 dark:border-[#2a2a2a] flex flex-col transition-transform duration-200',
+          mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+        )}
+      >
         <div className="p-6 border-b border-gray-200 dark:border-[#2a2a2a]">
           <h1 className="text-xl font-bold tracking-tighter flex items-center gap-2">
             <Truck className="text-orange-500" />
-            <span>LastMile<span className="text-orange-500">Logistics</span></span>
+            <span>
+              LastMile<span className="text-orange-500">Logistics</span>
+            </span>
           </h1>
           <p className="text-xs text-gray-500 mt-1 uppercase tracking-widest font-mono">{t('LastMileLogistics')}</p>
         </div>
-        
+
         <nav className="flex-1 overflow-y-auto py-4">
           <ul className="space-y-1 px-3">
             {visibleNavItems.map((item) => {
@@ -53,12 +77,13 @@ export const Layout = () => {
                 <li key={item.path}>
                   <NavLink
                     to={item.path}
+                    onClick={closeMobileNav}
                     className={({ isActive }) =>
                       clsx(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                        isActive 
-                          ? "bg-orange-500/10 text-orange-500" 
-                          : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-[#2a2a2a]"
+                        'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                        isActive
+                          ? 'bg-orange-500/10 text-orange-500'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-[#2a2a2a]',
                       )
                     }
                   >
@@ -70,7 +95,7 @@ export const Layout = () => {
             })}
           </ul>
         </nav>
-        
+
         <div className="p-4 border-t border-gray-200 dark:border-[#2a2a2a]">
           <div className="flex items-center justify-between mb-4">
             <button onClick={toggleTheme} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2a2a]">
@@ -80,15 +105,13 @@ export const Layout = () => {
               <Globe size={18} />
               {i18n.language === 'en' ? 'AR' : 'EN'}
             </button>
-            <button onClick={logout} className="p-2 text-red-500 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10">
+            <button onClick={logout} className="hidden lg:inline-flex p-2 text-red-500 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10">
               <LogOut size={18} />
             </button>
           </div>
-          
+
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-sm font-bold text-white">
-              {user?.name?.charAt(0).toUpperCase() || 'U'}
-            </div>
+            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-sm font-bold text-white">{user?.name?.charAt(0).toUpperCase() || 'U'}</div>
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">{user?.name || t('User')}</p>
               <p className="text-xs text-gray-500">{t(currentRole)}</p>
@@ -98,7 +121,7 @@ export const Layout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-white dark:bg-[#0a0a0a] transition-colors duration-200">
+      <main className="flex-1 overflow-y-auto bg-white dark:bg-[#0a0a0a] transition-colors duration-200 pt-14 lg:pt-0">
         <Outlet />
       </main>
     </div>
