@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLogistics } from '../context/LogisticsContext';
 import { Warehouse as WarehouseIcon, Package, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -6,8 +6,15 @@ import { useTranslation } from 'react-i18next';
 export const Warehouse = () => {
   const { shipments } = useLogistics();
   const { t } = useTranslation();
-  
-  const atStation = shipments.filter(s => s.status === 'AtStation');
+  const [query, setQuery] = useState('');
+
+  const atStation = shipments.filter((s) => s.status === 'AtStation');
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return atStation;
+    return atStation.filter((s) => [s.trackingNumber, s.customerName, s.address, s.phone].some((v) => String(v).toLowerCase().includes(q)));
+  }, [atStation, query]);
 
   return (
     <div className="p-8 text-gray-900 dark:text-white h-full flex flex-col transition-colors duration-200">
@@ -29,7 +36,7 @@ export const Warehouse = () => {
             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{t('Awaiting Dispatch')}</p>
             <Package size={20} className="text-blue-600 dark:text-blue-500" />
           </div>
-          <p className="text-4xl font-bold font-mono tracking-tight text-blue-600 dark:text-blue-500">{atStation.filter(s => !s.assignedTo).length}</p>
+          <p className="text-4xl font-bold font-mono tracking-tight text-blue-600 dark:text-blue-500">{atStation.filter((s) => !s.assignedTo).length}</p>
         </div>
       </div>
 
@@ -41,14 +48,10 @@ export const Warehouse = () => {
           </h2>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-            <input 
-              type="text" 
-              placeholder={t('Scan barcode...')} 
-              className="bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333] rounded-lg pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:border-orange-500 transition-colors text-gray-900 dark:text-white"
-            />
+            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Scan barcode...')} className="bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333] rounded-lg pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:border-orange-500 transition-colors text-gray-900 dark:text-white" />
           </div>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto p-4">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -60,20 +63,19 @@ export const Warehouse = () => {
               </tr>
             </thead>
             <tbody>
-              {atStation.map((shipment) => (
+              {filtered.map((shipment) => (
                 <tr key={shipment.id} className="border-b border-gray-100 dark:border-[#2a2a2a] hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-colors">
                   <td className="p-4 font-mono text-sm font-bold text-orange-600 dark:text-orange-400">{shipment.trackingNumber}</td>
                   <td className="p-4 font-medium text-gray-900 dark:text-white">{shipment.customerName}</td>
                   <td className="p-4 text-gray-500 dark:text-gray-400 text-sm">{shipment.address.split(',')[0]}</td>
                   <td className="p-4">
-                    <span className="px-2 py-1 rounded text-xs font-bold bg-gray-200 dark:bg-gray-500/20 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-500/30">
-                      {shipment.assignedTo ? t('Assigned (Pending Pickup)') : t('Unassigned')}
-                    </span>
+                    <span className="px-2 py-1 rounded text-xs font-bold bg-gray-200 dark:bg-gray-500/20 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-500/30">{shipment.assignedTo ? t('Assigned (Pending Pickup)') : t('Unassigned')}</span>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {!filtered.length ? <p className="text-center text-sm text-gray-500 py-6">No matching shipments.</p> : null}
         </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ interface LogisticsContextType {
   assignShipment: (shipmentId: string, courierId: string) => Promise<{ ok: boolean; error?: string }>;
   updateShipmentStatus: (shipmentId: string, status: ShipmentStatus, note?: string) => Promise<{ ok: boolean; error?: string }>;
   importShipmentsFromSheet: (rows: Record<string, unknown>[]) => Promise<{ ok: boolean; added: number; skipped: number; errors: string[] }>;
+  settleCourierDeliveries: (courierId: string) => Promise<{ ok: boolean; settled: number; error?: string }>;
 }
 
 const LogisticsContext = createContext<LogisticsContextType | undefined>(undefined);
@@ -255,7 +256,33 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
     return { ok: true, added: fresh.length, skipped, errors };
   };
 
-  return <LogisticsContext.Provider value={{ shipments, couriers, loading, error, fetchData, assignShipment, updateShipmentStatus, importShipmentsFromSheet }}>{children}</LogisticsContext.Provider>;
+  const settleCourierDeliveries = async (courierId: string) => {
+    try {
+      let settled = 0;
+      setShipments((prev) =>
+        prev.map((s) => {
+          const isTarget = s.assignedTo === courierId && s.status === 'Delivered' && !(s.meta?.settled as boolean);
+          if (!isTarget) return s;
+          settled += 1;
+          return {
+            ...s,
+            meta: {
+              ...(s.meta || {}),
+              settled: true,
+              settledAt: new Date().toISOString(),
+            },
+          };
+        }),
+      );
+      return { ok: true, settled };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Settle failed';
+      setError(msg);
+      return { ok: false, settled: 0, error: msg };
+    }
+  };
+
+  return <LogisticsContext.Provider value={{ shipments, couriers, loading, error, fetchData, assignShipment, updateShipmentStatus, importShipmentsFromSheet, settleCourierDeliveries }}>{children}</LogisticsContext.Provider>;
 };
 
 export const useLogistics = () => {
