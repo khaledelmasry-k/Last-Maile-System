@@ -16,6 +16,7 @@ interface LogisticsContextType {
 
 const LogisticsContext = createContext<LogisticsContextType | undefined>(undefined);
 const DEMO_TOKEN = 'demo-token';
+const STATE_KEY = 'lm-logistics-state-v1';
 
 const allowedStatuses: ShipmentStatus[] = ['AtStation', 'Assigned', 'OutForDelivery', 'Delivered', 'Failed', 'Rescheduled', 'ReturnedToStation', 'Lost'];
 
@@ -63,8 +64,26 @@ const mapExcelRowToShipment = (row: Record<string, unknown>): Shipment | null =>
 };
 
 export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
-  const [shipments, setShipments] = useState<Shipment[]>([]);
-  const [couriers, setCouriers] = useState<Courier[]>([]);
+  const [shipments, setShipments] = useState<Shipment[]>(() => {
+    try {
+      const raw = localStorage.getItem(STATE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as { shipments?: Shipment[] };
+      return parsed.shipments || [];
+    } catch {
+      return [];
+    }
+  });
+  const [couriers, setCouriers] = useState<Courier[]>(() => {
+    try {
+      const raw = localStorage.getItem(STATE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as { couriers?: Courier[] };
+      return parsed.couriers || [];
+    } catch {
+      return [];
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { token, apiFetch } = useAuth();
@@ -107,6 +126,14 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STATE_KEY, JSON.stringify({ shipments, couriers, updatedAt: Date.now() }));
+    } catch {
+      // ignore quota errors
+    }
+  }, [shipments, couriers]);
 
   useEffect(() => {
     if (!token || token === DEMO_TOKEN) return;
