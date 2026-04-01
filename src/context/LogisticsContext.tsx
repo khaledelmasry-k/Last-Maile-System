@@ -214,6 +214,22 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const importShipmentsFromSheet = async (rows: Record<string, unknown>[]) => {
+    if (token && token !== DEMO_TOKEN) {
+      try {
+        const result = (await apiFetch('/api/shipments/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rows }),
+        })) as { ok: boolean; added: number; skipped: number; errors: string[] };
+        await fetchData();
+        return result;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Import failed';
+        setError(msg);
+        return { ok: false, added: 0, skipped: 0, errors: [msg] };
+      }
+    }
+
     const errors: string[] = [];
     const mapped: Shipment[] = [];
 

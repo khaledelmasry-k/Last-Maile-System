@@ -53,6 +53,73 @@ export const DispatchPortal = () => {
     }
   };
 
+  const downloadTemplate = () => {
+    const headers = [
+      'AWB Number',
+      'Shipper Name',
+      'Shipper Phone',
+      'Shipper Email',
+      'Consignee Name',
+      'Consignee Phone',
+      'Consignee Email',
+      'Consignee Address',
+      'Shipment Reference',
+      'Received Date',
+      'Current Location',
+      'Current Warehouse',
+      'Final Destination',
+      'Final Warehouse',
+      'Number of Attempts',
+      'Last Attempt Date',
+      'days Number On System',
+      'Last Update',
+      'Declared Value',
+      'COD',
+      'Products types',
+      'Service Type',
+      'Driver',
+      'Status',
+      'Return date',
+      'Delivered On',
+      'Return Source',
+    ];
+
+    const sampleRow = {
+      'AWB Number': 'AWB-10001',
+      'Shipper Name': 'Sender Co',
+      'Shipper Phone': '01000000000',
+      'Shipper Email': 'shipper@example.com',
+      'Consignee Name': 'Ahmed Ali',
+      'Consignee Phone': '01111111111',
+      'Consignee Email': 'consignee@example.com',
+      'Consignee Address': 'Nasr City, Cairo',
+      'Shipment Reference': 'REF-001',
+      'Received Date': '2026-04-01',
+      'Current Location': 'Cairo',
+      'Current Warehouse': 'Main Hub',
+      'Final Destination': 'Maadi, Cairo',
+      'Final Warehouse': 'Maadi Hub',
+      'Number of Attempts': 0,
+      'Last Attempt Date': '',
+      'days Number On System': 0,
+      'Last Update': '2026-04-01',
+      'Declared Value': 500,
+      COD: 350,
+      'Products types': 'Electronics',
+      'Service Type': 'Standard',
+      Driver: '',
+      Status: 'AtStation',
+      'Return date': '',
+      'Delivered On': '',
+      'Return Source': '',
+    };
+
+    const worksheet = XLSX.utils.json_to_sheet([sampleRow], { header: headers });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'ShipmentsTemplate');
+    XLSX.writeFile(workbook, 'LastMileLogistics-Shipments-Template.xlsx');
+  };
+
   return (
     <div className="p-8 text-gray-900 dark:text-white h-full flex flex-col transition-colors duration-200">
       <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">

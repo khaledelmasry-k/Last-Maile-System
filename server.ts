@@ -34,6 +34,7 @@ type Shipment = {
   codAmount: number;
   assignedTo: string | null;
   timeline: { status: ShipmentStatus; timestamp: string; note: string }[];
+  meta?: Record<string, unknown>;
   deletedAt?: string | null;
 };
 type AuditLog = { id: string; at: string; actorId: string; actorEmail: string; action: string; targetType: string; targetId: string; payload?: unknown };
@@ -222,6 +223,21 @@ const auditQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
   actorId: z.string().max(64).optional(),
   action: z.string().max(64).optional(),
+});
+
+const importShipmentRowSchema = z.object({
+  'AWB Number': z.string().min(1),
+  'Consignee Name': z.string().optional().default(''),
+  'Consignee Phone': z.string().optional().default(''),
+  'Consignee Address': z.string().optional().default(''),
+  'Final Destination': z.string().optional().default(''),
+  COD: z.union([z.string(), z.number()]).optional(),
+  Status: z.string().optional().default('AtStation'),
+  Driver: z.string().optional().default(''),
+}).passthrough();
+
+const importShipmentsSchema = z.object({
+  rows: z.array(importShipmentRowSchema).min(1).max(5000),
 });
 
 function parseOrThrow<T>(schema: z.ZodSchema<T>, input: unknown, status = 400): T {
@@ -471,6 +487,86 @@ app.post('/api/shipments/:id/status', auth, (req: AuthedRequest, res, next) => {
     writeDB(db);
 
     res.json(shipment);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/shipments/import', auth, requireRole(['Admin', 'Dispatcher']), (req: AuthedRequest, res, next) => {
+  try {
+    const { rows } = parseOrThrow(importShipmentsSchema, req.body || {});
+    const db = readDB();
+    const existing = new Set(db.shipments.filter((s) => !s.deletedAt).map((s) => s.trackingNumber.toLowerCase()));
+
+    let added = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < rows.length; i += 1) {
+      try {
+        const r = rows[i] as Record<string, unknown>;
+        const awb = String(r['AWB Number'] || '').trim();
+        if (!awb) {
+          skipped += 1;
+          errors.push(`Row ${i + 1}: missing AWB Number`);
+          continue;
+        }
+
+        if (existing.has(awb.toLowerCase())) {
+          skipped += 1;
+          continue;
+        }
+
+        const statusRaw = String(r['Status'] || 'AtStation').trim();
+        const status = (isValidStatus(statusRaw) ? statusRaw : 'AtStation') as ShipmentStatus;
+        const codAmount = Number(r['COD'] || 0) || 0;
+
+        const shipment: Shipment = {
+          id: awb,
+          trackingNumber: awb,
+          status,
+          customerName: String(r['Consignee Name'] || '').trim() || 'Unknown Customer',
+          phone: String(r['Consignee Phone'] || '').trim() || '-',
+          address: String(r['Final Destination'] || r['Consignee Address'] || '').trim() || '-',
+          codAmount,
+          assignedTo: String(r['Driver'] || '').trim() || null,
+          timeline: [{ status, timestamp: new Date().toISOString(), note: 'Imported from Excel' }],
+          meta: {
+            shipperName: r['Shipper Name'] || '',
+            shipperPhone: r['Shipper Phone'] || '',
+            shipperEmail: r['Shipper Email'] || '',
+            consigneeEmail: r['Consignee Email'] || '',
+            shipmentReference: r['Shipment Reference'] || '',
+            receivedDate: r['Received Date'] || '',
+            currentLocation: r['Current Location'] || '',
+            currentWarehouse: r['Current Warehouse'] || '',
+            finalDestination: r['Final Destination'] || '',
+            finalWarehouse: r['Final Warehouse'] || '',
+            numberOfAttempts: r['Number of Attempts'] || '',
+            lastAttemptDate: r['Last Attempt Date'] || '',
+            daysOnSystem: r['days Number On System'] || '',
+            lastUpdate: r['Last Update'] || '',
+            declaredValue: r['Declared Value'] || '',
+            productsTypes: r['Products types'] || '',
+            serviceType: r['Service Type'] || '',
+            returnDate: r['Return date'] || '',
+            deliveredOn: r['Delivered On'] || '',
+            returnSource: r['Return Source'] || '',
+          },
+        };
+
+        db.shipments.unshift(shipment);
+        existing.add(awb.toLowerCase());
+        added += 1;
+      } catch {
+        skipped += 1;
+        errors.push(`Row ${i + 1}: invalid row`);
+      }
+    }
+
+    pushAudit(db, req.user!, 'IMPORT_SHIPMENTS', 'shipment', `batch-${Date.now()}`, { totalRows: rows.length, added, skipped, errors: errors.length });
+    writeDB(db);
+    res.json({ ok: true, added, skipped, errors });
   } catch (err) {
     next(err);
   }
