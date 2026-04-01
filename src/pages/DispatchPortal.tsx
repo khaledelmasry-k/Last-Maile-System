@@ -1,18 +1,21 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useLogistics } from '../context/LogisticsContext';
-import { Search, MapPin, User, CheckCircle2 } from 'lucide-react';
+import { Search, MapPin, User, CheckCircle2, Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { hasPermission } from '../config/rbac';
 
 export const DispatchPortal = () => {
-  const { shipments, couriers, assignShipment } = useLogistics();
+  const { shipments, couriers, assignShipment, importShipmentsFromSheet } = useLogistics();
   const { t } = useTranslation();
   const { user } = useAuth();
   const canDispatch = hasPermission(user?.role, 'dispatch.manage');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourier, setSelectedCourier] = useState<string>('');
   const [error, setError] = useState('');
+  const [importResult, setImportResult] = useState('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const term = searchTerm.trim().toLowerCase();
   const unassignedShipments = shipments.filter((s) => {
@@ -30,13 +33,56 @@ export const DispatchPortal = () => {
     if (!result.ok) setError(result.error || 'Assign failed');
   };
 
+  const handleExcelUpload = async (file: File) => {
+    try {
+      setError('');
+      setImportResult('');
+      if (!canDispatch) return setError('Not allowed for your role');
+
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const firstSheet = workbook.Sheets[firstSheetName];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(firstSheet, { defval: '' });
+
+      const result = await importShipmentsFromSheet(rows);
+      setImportResult(`Imported: ${result.added}, Skipped: ${result.skipped}, Errors: ${result.errors.length}`);
+      if (result.errors.length) setError(result.errors.slice(0, 3).join(' | '));
+    } catch {
+      setError('Failed to import file');
+    }
+  };
+
   return (
     <div className="p-8 text-gray-900 dark:text-white h-full flex flex-col transition-colors duration-200">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold font-sans tracking-tight">{t('Dispatch Portal')}</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1 font-mono text-sm uppercase">{t('Assign Shipments to Couriers')}</p>
+      <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold font-sans tracking-tight">{t('Dispatch Portal')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 font-mono text-sm uppercase">{t('Assign Shipments to Couriers')}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleExcelUpload(file);
+              e.currentTarget.value = '';
+            }}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!canDispatch}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm"
+          >
+            <Upload size={16} /> Upload Excel
+          </button>
+        </div>
       </header>
 
+      {importResult ? <p className="mb-2 text-sm text-green-600 dark:text-green-400">{importResult}</p> : null}
       {error ? <p className="mb-3 text-sm text-red-500">{error}</p> : null}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0">
         {/* Left Column: Unassigned Shipments */}

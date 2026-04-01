@@ -22,6 +22,7 @@ export interface Shipment {
   codAmount: number;
   assignedTo: string | null;
   timeline: TimelineEvent[];
+  meta?: Record<string, unknown>;
 }
 
 export interface Courier {
