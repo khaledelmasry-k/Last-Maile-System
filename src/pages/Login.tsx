@@ -22,8 +22,8 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-center p-4 transition-colors duration-200">
-      <div className="max-w-md w-full bg-white dark:bg-[#141414] rounded-2xl shadow-xl border border-gray-200 dark:border-[#2a2a2a] p-8">
+    <div className="min-h-screen flex items-center justify-center p-4 transition-colors duration-200" style={{ background: 'var(--lm-bg)' }}>
+      <div className="max-w-md w-full panel rounded-2xl p-8">
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 bg-orange-500/10 rounded-2xl flex items-center justify-center mb-4">
             <Truck className="text-orange-500 w-8 h-8" />
@@ -41,7 +41,7 @@ export const Login = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-300 dark:border-[#333] text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+              className="w-full input-field rounded-xl px-4 py-3"
               placeholder="admin@express.com"
               required
             />
@@ -53,7 +53,7 @@ export const Login = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-300 dark:border-[#333] text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+              className="w-full input-field rounded-xl px-4 py-3"
               placeholder="••••••••"
               required
             />
@@ -64,7 +64,7 @@ export const Login = () => {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
-              className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-300 dark:border-[#333] text-gray-900 dark:text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+              className="w-full input-field rounded-xl px-4 py-3"
             >
               <option value="Admin">{t('Admin')}</option>
               <option value="Dispatcher">{t('Dispatcher')}</option>
@@ -77,7 +77,7 @@ export const Login = () => {
 
           {error ? <p className="text-sm text-red-500">{error}</p> : null}
 
-          <button type="submit" disabled={submitting} className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors">
+          <button type="submit" disabled={submitting} className="w-full btn-primary py-3 rounded-xl">
             {submitting ? 'Signing in...' : t('Sign In')}
           </button>
         </form>

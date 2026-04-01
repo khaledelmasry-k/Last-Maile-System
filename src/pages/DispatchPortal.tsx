@@ -121,7 +121,7 @@ export const DispatchPortal = () => {
   };
 
   return (
-    <div className="p-8 text-gray-900 dark:text-white h-full flex flex-col transition-colors duration-200">
+    <div className="page-wrap h-full flex flex-col">
       <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold font-sans tracking-tight">{t('Dispatch Portal')}</h1>
@@ -139,6 +139,12 @@ export const DispatchPortal = () => {
               e.currentTarget.value = '';
             }}
           />
+          <button
+            onClick={downloadTemplate}
+            className="btn-secondary text-sm"
+          >
+            Download Template
+          </button>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={!canDispatch}

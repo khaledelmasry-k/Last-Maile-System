@@ -38,9 +38,9 @@ export const Layout = () => {
   const closeMobileNav = () => setMobileNavOpen(false);
 
   return (
-    <div className="flex h-screen bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-white overflow-hidden font-sans transition-colors duration-200">
+    <div className="flex h-screen overflow-hidden font-sans transition-colors duration-200" style={{ background: 'var(--lm-bg)', color: 'var(--lm-text)' }}>
       {/* Mobile header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 px-3 border-b border-gray-200 dark:border-[#2a2a2a] bg-gray-50 dark:bg-[#141414] flex items-center justify-between">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 px-3 border-b flex items-center justify-between" style={{ background: 'var(--lm-surface)', borderColor: 'var(--lm-border)' }}>
         <button onClick={() => setMobileNavOpen((v) => !v)} className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2a2a]">
           {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -56,9 +56,10 @@ export const Layout = () => {
       {/* Sidebar */}
       <aside
         className={clsx(
-          'fixed lg:static top-14 lg:top-0 left-0 z-40 h-[calc(100vh-56px)] lg:h-screen w-72 lg:w-64 bg-gray-50 dark:bg-[#141414] border-r border-gray-200 dark:border-[#2a2a2a] flex flex-col transition-transform duration-200',
+          'fixed lg:static top-14 lg:top-0 left-0 z-40 h-[calc(100vh-56px)] lg:h-screen w-72 lg:w-64 border-r flex flex-col transition-transform duration-200',
           mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         )}
+        style={{ background: 'var(--lm-surface)', borderColor: 'var(--lm-border)' }}
       >
         <div className="p-6 border-b border-gray-200 dark:border-[#2a2a2a]">
           <h1 className="text-xl font-bold tracking-tighter flex items-center gap-2">
@@ -122,7 +123,7 @@ export const Layout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-white dark:bg-[#0a0a0a] transition-colors duration-200 pt-14 lg:pt-0">
+      <main className="flex-1 overflow-y-auto transition-colors duration-200 pt-14 lg:pt-0" style={{ background: 'var(--lm-bg)' }}>
         <Outlet />
       </main>
     </div>

@@ -31,7 +31,7 @@ export const Finance = () => {
   };
 
   return (
-    <div className="p-8 text-gray-900 dark:text-white h-full flex flex-col transition-colors duration-200">
+    <div className="page-wrap h-full flex flex-col">
       <header className="mb-8">
         <h1 className="text-3xl font-bold font-sans tracking-tight">{t('Finance & COD')}</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1 font-mono text-sm uppercase">{t('Settle Cash on Delivery')}</p>

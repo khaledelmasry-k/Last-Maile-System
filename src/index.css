@@ -1,1 +1,109 @@
 @import "tailwindcss";
+
+:root {
+  --lm-bg: #f8fafc;
+  --lm-surface: #ffffff;
+  --lm-surface-soft: #f8fafc;
+  --lm-border: #e2e8f0;
+  --lm-text: #0f172a;
+  --lm-muted: #64748b;
+  --lm-primary: #4f46e5;
+  --lm-primary-strong: #4338ca;
+  --lm-success: #10b981;
+  --lm-warning: #f59e0b;
+  --lm-danger: #ef4444;
+}
+
+.dark {
+  --lm-bg: #0b1020;
+  --lm-surface: #141b2d;
+  --lm-surface-soft: #0f172a;
+  --lm-border: #263246;
+  --lm-text: #e2e8f0;
+  --lm-muted: #94a3b8;
+  --lm-primary: #6366f1;
+  --lm-primary-strong: #4f46e5;
+  --lm-success: #34d399;
+  --lm-warning: #fbbf24;
+  --lm-danger: #f87171;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--lm-bg);
+  color: var(--lm-text);
+}
+
+.page-wrap {
+  @apply p-4 md:p-8 transition-colors duration-200;
+  color: var(--lm-text);
+}
+
+.page-title {
+  @apply text-2xl md:text-3xl font-bold tracking-tight;
+}
+
+.page-subtitle {
+  @apply mt-1 text-xs md:text-sm uppercase tracking-wider font-mono;
+  color: var(--lm-muted);
+}
+
+.panel {
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border);
+  @apply rounded-xl shadow-sm;
+}
+
+.panel-header {
+  background: var(--lm-surface-soft);
+  border-bottom: 1px solid var(--lm-border);
+  @apply p-4 md:p-5;
+}
+
+.kpi-card {
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border);
+  @apply rounded-xl p-5 shadow-sm;
+}
+
+.input-field {
+  background: var(--lm-surface-soft);
+  border: 1px solid var(--lm-border);
+  color: var(--lm-text);
+  @apply rounded-lg px-3 py-2 text-sm outline-none;
+}
+
+.input-field:focus {
+  border-color: var(--lm-primary);
+}
+
+.btn-primary {
+  background: var(--lm-primary);
+  color: #fff;
+  @apply rounded-lg px-4 py-2 font-semibold transition-colors;
+}
+
+.btn-primary:hover {
+  background: var(--lm-primary-strong);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+.btn-secondary {
+  background: var(--lm-surface-soft);
+  border: 1px solid var(--lm-border);
+  color: var(--lm-text);
+  @apply rounded-lg px-4 py-2 font-medium transition-colors;
+}
+
+.table-shell {
+  @apply overflow-auto;
+}
