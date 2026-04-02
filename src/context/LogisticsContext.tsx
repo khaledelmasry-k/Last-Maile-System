@@ -13,6 +13,7 @@ interface LogisticsContextType {
   updateShipmentStatus: (shipmentId: string, status: ShipmentStatus, note?: string) => Promise<{ ok: boolean; error?: string }>;
   importShipmentsFromSheet: (rows: Record<string, unknown>[]) => Promise<{ ok: boolean; added: number; skipped: number; errors: string[] }>;
   settleCourierDeliveries: (courierId: string) => Promise<{ ok: boolean; settled: number; error?: string }>;
+  addCourier: (input: { name: string; phone: string; vehicle: string }) => Promise<{ ok: boolean; courier?: Courier; error?: string }>;
 }
 
 const LogisticsContext = createContext<LogisticsContextType | undefined>(undefined);
@@ -282,7 +283,29 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  return <LogisticsContext.Provider value={{ shipments, couriers, loading, error, fetchData, assignShipment, updateShipmentStatus, importShipmentsFromSheet, settleCourierDeliveries }}>{children}</LogisticsContext.Provider>;
+  const addCourier = async ({ name, phone, vehicle }: { name: string; phone: string; vehicle: string }) => {
+    try {
+      const cleanName = name.trim();
+      const cleanPhone = phone.trim();
+      const cleanVehicle = vehicle.trim();
+
+      if (!cleanName || !cleanPhone || !cleanVehicle) {
+        return { ok: false, error: 'Name, phone and vehicle are required' };
+      }
+
+      const id = `DRV-${Date.now().toString().slice(-6)}`;
+      const courier: Courier = { id, name: cleanName, phone: cleanPhone, vehicle: cleanVehicle, active: true };
+
+      setCouriers((prev) => [courier, ...prev]);
+      return { ok: true, courier };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to add courier';
+      setError(msg);
+      return { ok: false, error: msg };
+    }
+  };
+
+  return <LogisticsContext.Provider value={{ shipments, couriers, loading, error, fetchData, assignShipment, updateShipmentStatus, importShipmentsFromSheet, settleCourierDeliveries, addCourier }}>{children}</LogisticsContext.Provider>;
 };
 
 export const useLogistics = () => {
