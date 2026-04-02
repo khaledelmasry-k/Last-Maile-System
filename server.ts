@@ -179,7 +179,11 @@ const statusActionRoles: Record<ShipmentStatus, Role[]> = {
 };
 
 app.use(cors());
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: process.env.DISABLE_CSP === '1' ? false : undefined,
+  })
+);
 app.use(express.json({ limit: '1mb' }));
 app.disable('x-powered-by');
 
