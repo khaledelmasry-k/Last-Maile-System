@@ -1,13 +1,13 @@
 import React, { useRef, useState } from 'react';
 import { useLogistics } from '../context/LogisticsContext';
-import { Search, MapPin, User, CheckCircle2, Upload, Plus, X } from 'lucide-react';
+import { Search, MapPin, User, CheckCircle2, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { hasPermission } from '../config/rbac';
 
 export const DispatchPortal = () => {
-  const { shipments, couriers, assignShipment, importShipmentsFromSheet, addCourier } = useLogistics();
+  const { shipments, couriers, assignShipment, importShipmentsFromSheet } = useLogistics();
   const { t } = useTranslation();
   const { user } = useAuth();
   const canDispatch = hasPermission(user?.role, 'dispatch.manage');
@@ -15,10 +15,6 @@ export const DispatchPortal = () => {
   const [selectedCourier, setSelectedCourier] = useState<string>('');
   const [error, setError] = useState('');
   const [importResult, setImportResult] = useState('');
-  const [showAddCourierModal, setShowAddCourierModal] = useState(false);
-  const [newCourierName, setNewCourierName] = useState('');
-  const [newCourierPhone, setNewCourierPhone] = useState('');
-  const [newCourierVehicle, setNewCourierVehicle] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const term = searchTerm.trim().toLowerCase();
@@ -55,28 +51,6 @@ export const DispatchPortal = () => {
     } catch {
       setError('Failed to import file');
     }
-  };
-
-  const handleAddCourier = async () => {
-    setError('');
-    if (!canDispatch) return setError('Not allowed for your role');
-
-    const result = await addCourier({
-      name: newCourierName,
-      phone: newCourierPhone,
-      vehicle: newCourierVehicle,
-    });
-
-    if (!result.ok) {
-      setError(result.error || 'Failed to add courier');
-      return;
-    }
-
-    if (result.courier) setSelectedCourier(result.courier.id);
-    setShowAddCourierModal(false);
-    setNewCourierName('');
-    setNewCourierPhone('');
-    setNewCourierVehicle('');
   };
 
   const downloadTemplate = () => {
@@ -239,16 +213,7 @@ export const DispatchPortal = () => {
         <div className="flex flex-col gap-6">
           {/* Courier Selection */}
           <div className="bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#2a2a2a] rounded-xl p-5 shadow-sm">
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('Select Courier')}</h2>
-              <button
-                onClick={() => setShowAddCourierModal(true)}
-                disabled={!canDispatch}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white dark:text-black text-xs font-semibold"
-              >
-                <Plus size={14} /> Add Courier
-              </button>
-            </div>
+            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">{t('Select Courier')}</h2>
             <div className="space-y-2">
               {couriers.map(courier => (
                 <label 
@@ -309,57 +274,6 @@ export const DispatchPortal = () => {
           </div>
         </div>
       </div>
-
-      {showAddCourierModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-xl border border-gray-200 dark:border-[#2a2a2a] bg-white dark:bg-[#141414] shadow-2xl">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-[#2a2a2a]">
-              <h3 className="text-base font-semibold">Add Courier</h3>
-              <button
-                onClick={() => setShowAddCourierModal(false)}
-                className="p-1 rounded hover:bg-gray-100 dark:hover:bg-[#1e1e1e]"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div className="p-4 space-y-3">
-              <input
-                value={newCourierName}
-                onChange={(e) => setNewCourierName(e.target.value)}
-                placeholder="Courier name"
-                className="w-full input-field rounded-lg px-3 py-2"
-              />
-              <input
-                value={newCourierPhone}
-                onChange={(e) => setNewCourierPhone(e.target.value)}
-                placeholder="Phone"
-                className="w-full input-field rounded-lg px-3 py-2"
-              />
-              <input
-                value={newCourierVehicle}
-                onChange={(e) => setNewCourierVehicle(e.target.value)}
-                placeholder="Vehicle"
-                className="w-full input-field rounded-lg px-3 py-2"
-              />
-            </div>
-            <div className="p-4 border-t border-gray-200 dark:border-[#2a2a2a] flex items-center justify-end gap-2">
-              <button
-                onClick={() => setShowAddCourierModal(false)}
-                className="btn-secondary text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddCourier}
-                disabled={!canDispatch}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white dark:text-black text-sm"
-              >
-                <Plus size={14} /> Save Courier
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
