@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth, UserRole } from '../context/AuthContext';
-import { Truck } from 'lucide-react';
+import { Eye, EyeOff, Truck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export const Login = () => {
@@ -11,6 +11,7 @@ export const Login = () => {
   const [role, setRole] = useState<UserRole>('Admin');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,10 +35,11 @@ export const Login = () => {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-mono uppercase tracking-widest">{t('Login')}</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Email')}</label>
+            <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Email')}</label>
             <input
+              id="login-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -48,20 +50,31 @@ export const Login = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Password')}</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full input-field rounded-xl px-4 py-3"
-              placeholder="••••••••"
-              required
-            />
+            <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Password')}</label>
+            <div className="relative">
+              <input
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full input-field rounded-xl px-4 py-3 pr-11"
+                placeholder="••••••••"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Simulate Role')}</label>
+            <label htmlFor="login-role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('Simulate Role')}</label>
             <select
+              id="login-role"
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
               className="w-full input-field rounded-xl px-4 py-3"
@@ -73,6 +86,10 @@ export const Login = () => {
               <option value="CS">{t('CS')}</option>
               <option value="Warehouse">{t('Warehouse')}</option>
             </select>
+          </div>
+
+          <div className="rounded-lg border border-gray-200 dark:border-[#2a2a2a] p-3 text-xs text-gray-600 dark:text-gray-300">
+            Demo: <span className="font-mono">admin@express.com / Admin@123</span>
           </div>
 
           {error ? <p className="text-sm text-red-500">{error}</p> : null}
