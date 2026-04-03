@@ -12,8 +12,9 @@ API base: `http://127.0.0.1:8000/api`
 
 ## 2) Default login
 
-- email: `admin@express.com`
-- password: `Admin@123`
+- Admin: `admin@express.com` / `Admin@123`
+- Dispatcher: `dispatcher@express.com` / `Dispatch@123`
+- Finance: `finance@express.com` / `Finance@123`
 
 ## 3) Implemented endpoints
 
@@ -22,6 +23,10 @@ API base: `http://127.0.0.1:8000/api`
 - `POST /api/logout` (Bearer token)
 - `GET /api/couriers` (Bearer token)
 - `POST /api/couriers` (Bearer token, Admin/Dispatcher)
+- `GET /api/shipments` (Bearer token)
+- `POST /api/shipments/{id}/assign` (Bearer token, Admin/Dispatcher)
+- `POST /api/shipments/{id}/status` (Bearer token, role-based transition check)
+- `POST /api/finance/settle/{courierCode}` (Bearer token, Admin/Finance)
 
 ## 4) Connect React app
 

@@ -19,8 +19,27 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        User::updateOrCreate(
+            ['email' => 'dispatcher@express.com'],
+            [
+                'name' => 'Dispatcher User',
+                'role' => 'Dispatcher',
+                'password' => Hash::make('Dispatch@123'),
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'finance@express.com'],
+            [
+                'name' => 'Finance User',
+                'role' => 'Finance',
+                'password' => Hash::make('Finance@123'),
+            ]
+        );
+
         $this->call([
             CourierSeeder::class,
+            ShipmentSeeder::class,
         ]);
     }
 }
