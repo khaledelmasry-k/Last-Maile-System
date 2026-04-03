@@ -2,10 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { useLogistics } from '../context/LogisticsContext';
 import { HeadphonesIcon, MessageSquare, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
+import { hasPermission } from '../config/rbac';
 
 export const CustomerService = () => {
   const { shipments } = useLogistics();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const canManageCs = hasPermission(user?.role, 'cs.manage');
   const [tracker, setTracker] = useState('');
   const [smsLog, setSmsLog] = useState<string[]>([]);
   const [ticketLog, setTicketLog] = useState<string[]>([]);
@@ -19,11 +23,13 @@ export const CustomerService = () => {
   }, [shipments, tracker]);
 
   const createTicket = () => {
+    if (!canManageCs) return;
     const stamp = new Date().toLocaleString();
     setTicketLog((prev) => [`Ticket created at ${stamp}`, ...prev].slice(0, 5));
   };
 
   const sendSmsUpdate = () => {
+    if (!canManageCs) return;
     const stamp = new Date().toLocaleString();
     setSmsLog((prev) => [`SMS update sent at ${stamp}`, ...prev].slice(0, 5));
   };
@@ -61,7 +67,7 @@ export const CustomerService = () => {
                       {t(shipment.status)}
                     </span>
                   </div>
-                  <button className="bg-gray-200 dark:bg-[#333] hover:bg-gray-300 dark:hover:bg-[#444] text-gray-900 dark:text-white text-xs font-bold px-3 py-1.5 rounded transition-colors flex items-center gap-2">
+                  <button disabled={!canManageCs} className="bg-gray-200 dark:bg-[#333] hover:bg-gray-300 dark:hover:bg-[#444] text-gray-900 dark:text-white text-xs font-bold px-3 py-1.5 rounded transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                     <MessageSquare size={14} /> {t('Contact')}
                   </button>
                 </div>
@@ -95,7 +101,7 @@ export const CustomerService = () => {
           </h2>
 
           <div className="space-y-3">
-            <button onClick={createTicket} className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333] hover:border-blue-500 p-4 rounded-lg text-left transition-colors group">
+            <button onClick={createTicket} disabled={!canManageCs} className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333] hover:border-blue-500 p-4 rounded-lg text-left transition-colors group disabled:opacity-50 disabled:cursor-not-allowed">
               <h3 className="font-bold text-blue-600 dark:text-blue-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 mb-1">{t('Create Ticket')}</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400">{t('Open a new support ticket for a customer inquiry.')}</p>
             </button>
@@ -110,7 +116,7 @@ export const CustomerService = () => {
               ) : null}
             </div>
 
-            <button onClick={sendSmsUpdate} className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333] hover:border-green-500 p-4 rounded-lg text-left transition-colors group">
+            <button onClick={sendSmsUpdate} disabled={!canManageCs} className="w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333] hover:border-green-500 p-4 rounded-lg text-left transition-colors group disabled:opacity-50 disabled:cursor-not-allowed">
               <h3 className="font-bold text-green-600 dark:text-green-500 group-hover:text-green-500 dark:group-hover:text-green-400 mb-1">{t('Send SMS Update')}</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400">{t('Manually notify customer of delay or status change.')}</p>
             </button>

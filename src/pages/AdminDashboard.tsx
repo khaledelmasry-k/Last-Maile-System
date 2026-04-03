@@ -3,10 +3,14 @@ import { useLogistics } from '../context/LogisticsContext';
 import { Package, Truck, CheckCircle, AlertCircle, Clock, Users, ShieldAlert, Warehouse } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
+import { hasPermission } from '../config/rbac';
 
 export const AdminDashboard = () => {
   const { shipments, couriers, loading } = useLogistics();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const canManageRoles = hasPermission(user?.role, 'roles.manage');
 
   if (loading) return <div className="p-8 text-gray-900 dark:text-white font-mono">{t('Loading system data...')}</div>;
 
@@ -94,18 +98,21 @@ export const AdminDashboard = () => {
               <ShieldAlert size={18} className="text-orange-500" />
               {t('Access Control')}
             </h2>
-            <button className="text-xs font-bold text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+            <button
+              disabled={!canManageRoles}
+              className="text-xs font-bold text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               + {t('Add Role')}
             </button>
           </div>
           <div className="p-4 flex-1 overflow-y-auto">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 font-mono uppercase tracking-wider">{t('System Roles & Permissions')}</p>
             <div className="space-y-3">
-              <RoleCard name="Admin" desc="Full access to all portals and settings" users={2} color="bg-orange-500" permissions={['All Portals', 'Manage Users', 'System Settings']} />
-              <RoleCard name="Dispatcher" desc="Access to Dispatch Portal & Live Map" users={5} color="bg-blue-500" permissions={['Live Map', 'Dispatch Portal', 'Assign Couriers']} />
-              <RoleCard name="Finance" desc="Access to Finance & COD settlement" users={3} color="bg-green-500" permissions={['Finance Portal', 'Settle COD', 'View Reports']} />
-              <RoleCard name="Customer Service" desc="Access to CS Portal & Tracking" users={8} color="bg-purple-500" permissions={['CS Portal', 'Track Shipments', 'Create Tickets']} />
-              <RoleCard name="Warehouse" desc="Access to Receive & Warehouse" users={4} color="bg-yellow-500" permissions={['Warehouse Portal', 'Receive Returns', 'Inventory']} />
+              <RoleCard name="Admin" desc="Full access to all portals and settings" users={2} color="bg-orange-500" permissions={['All Portals', 'Manage Users', 'System Settings']} canManage={canManageRoles} />
+              <RoleCard name="Dispatcher" desc="Access to Dispatch Portal & Live Map" users={5} color="bg-blue-500" permissions={['Live Map', 'Dispatch Portal', 'Assign Couriers']} canManage={canManageRoles} />
+              <RoleCard name="Finance" desc="Access to Finance & COD settlement" users={3} color="bg-green-500" permissions={['Finance Portal', 'Settle COD', 'View Reports']} canManage={canManageRoles} />
+              <RoleCard name="Customer Service" desc="Access to CS Portal & Tracking" users={8} color="bg-purple-500" permissions={['CS Portal', 'Track Shipments', 'Create Tickets']} canManage={canManageRoles} />
+              <RoleCard name="Warehouse" desc="Access to Receive & Warehouse" users={4} color="bg-yellow-500" permissions={['Warehouse Portal', 'Receive Returns', 'Inventory']} canManage={canManageRoles} />
             </div>
           </div>
         </div>
@@ -114,7 +121,7 @@ export const AdminDashboard = () => {
   );
 };
 
-const RoleCard = ({ name, desc, users, color, permissions }: any) => {
+const RoleCard = ({ name, desc, users, color, permissions, canManage }: any) => {
   const { t } = useTranslation();
   return (
   <div className="bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333] p-4 rounded-lg flex flex-col gap-3">
@@ -136,8 +143,8 @@ const RoleCard = ({ name, desc, users, color, permissions }: any) => {
       ))}
     </div>
     <div className="flex justify-end gap-2 mt-2 border-t border-gray-200 dark:border-[#333] pt-3">
-      <button className="text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">{t('Edit')}</button>
-      <button className="text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">{t('Manage Users')}</button>
+      <button disabled={!canManage} className="text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Edit')}</button>
+      <button disabled={!canManage} className="text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{t('Manage Users')}</button>
     </div>
   </div>
 )};
