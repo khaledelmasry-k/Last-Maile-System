@@ -27,8 +27,14 @@ API base: `http://127.0.0.1:8000/api`
 
 In frontend, set API base to `http://127.0.0.1:8000` and call `/api/*` from Laravel.
 
-## 5) Notes
+## 5) Access Control (Server-side)
 
 - Sanctum token auth is enabled.
+- Role middleware alias: `role` (`app/Http/Middleware/EnsureUserRole.php`).
+- Example applied:
+  - `POST /api/couriers` → `role:Admin,Dispatcher`
+
+## 6) Notes
+
 - CORS is open by default in `config/cors.php`.
 - If needed in production, restrict `allowed_origins`.

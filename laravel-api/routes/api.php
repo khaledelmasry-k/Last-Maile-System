@@ -53,11 +53,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::post('/couriers', function (Request $request) {
-        $user = $request->user();
-        if (!in_array($user->role, ['Admin', 'Dispatcher'], true)) {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
-
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'phone' => ['required', 'string', 'max:40'],
@@ -74,5 +69,5 @@ Route::middleware('auth:sanctum')->group(function () {
         ]);
 
         return response()->json($courier, 201);
-    });
+    })->middleware('role:Admin,Dispatcher');
 });
