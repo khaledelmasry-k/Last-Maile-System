@@ -141,7 +141,8 @@ export const DispatchPortal = () => {
           />
           <button
             onClick={downloadTemplate}
-            className="btn-secondary text-sm"
+            disabled={!canDispatch}
+            className="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Download Template
           </button>
@@ -218,11 +219,11 @@ export const DispatchPortal = () => {
               {couriers.map(courier => (
                 <label 
                   key={courier.id} 
-                  className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                  className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
                     selectedCourier === courier.id 
                       ? 'bg-orange-50 dark:bg-orange-500/10 border-orange-500 text-orange-600 dark:text-orange-500' 
                       : 'bg-gray-50 dark:bg-[#1a1a1a] border-gray-200 dark:border-[#333] text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
-                  }`}
+                  } ${canDispatch ? 'cursor-pointer' : 'opacity-70 cursor-not-allowed'}`}
                 >
                   <div className="flex items-center gap-3">
                     <input 
@@ -231,6 +232,7 @@ export const DispatchPortal = () => {
                       value={courier.id}
                       checked={selectedCourier === courier.id}
                       onChange={() => setSelectedCourier(courier.id)}
+                      disabled={!canDispatch}
                       className="hidden"
                     />
                     <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${

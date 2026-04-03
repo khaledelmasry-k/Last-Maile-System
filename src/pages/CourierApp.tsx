@@ -66,8 +66,11 @@ export const CourierApp = () => {
               key={shipment.id} 
               className={`bg-gray-50 dark:bg-[#1a1a1a] border rounded-2xl p-4 transition-all ${
                 selectedShipment === shipment.id ? 'border-orange-500 ring-1 ring-orange-500' : 'border-gray-200 dark:border-[#333]'
-              }`}
-              onClick={() => setSelectedShipment(shipment.id === selectedShipment ? null : shipment.id)}
+              } ${canExecuteCourierActions ? 'cursor-pointer' : 'opacity-80 cursor-not-allowed'}`}
+              onClick={() => {
+                if (!canExecuteCourierActions) return;
+                setSelectedShipment(shipment.id === selectedShipment ? null : shipment.id);
+              }}
             >
               <div className="flex justify-between items-start mb-3">
                 <div>
@@ -110,10 +113,11 @@ export const CourierApp = () => {
                       <input 
                         type="text" 
                         placeholder={t('Add delivery note (optional)...')} 
-                        className="w-full bg-white dark:bg-black border border-gray-300 dark:border-[#333] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-500 text-gray-900 dark:text-white"
+                        className="w-full bg-white dark:bg-black border border-gray-300 dark:border-[#333] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-500 text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
+                        disabled={!canExecuteCourierActions}
                       />
                       <div className="grid grid-cols-2 gap-2">
                         <button 
