@@ -29,11 +29,30 @@ export const RolesPermissions = () => {
   const { t } = useTranslation();
 
   return (
-    <div className="p-4 md:p-8 text-gray-900 dark:text-white h-full flex flex-col transition-colors duration-200">
+    <div className="page-wrap text-gray-900 dark:text-white h-full flex flex-col transition-colors duration-200">
       <header className="mb-6 md:mb-8">
         <h1 className="text-2xl md:text-3xl font-bold font-sans tracking-tight">{t('Roles & Permissions')}</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1 font-mono text-xs md:text-sm uppercase">{t('Access Control')} - Applied Matrix</p>
       </header>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div className="panel p-3">
+          <p className="text-xs text-gray-500 uppercase">{t('Roles')}</p>
+          <p className="text-xl font-bold">{Object.keys(rolePermissions).length}</p>
+        </div>
+        <div className="panel p-3">
+          <p className="text-xs text-gray-500 uppercase">{t('Permissions')}</p>
+          <p className="text-xl font-bold">{allPermissions.length}</p>
+        </div>
+        <div className="panel p-3">
+          <p className="text-xs text-gray-500 uppercase">{t('Admin Grants')}</p>
+          <p className="text-xl font-bold">{rolePermissions.Admin.length}</p>
+        </div>
+        <div className="panel p-3">
+          <p className="text-xs text-gray-500 uppercase">{t('Restricted Roles')}</p>
+          <p className="text-xl font-bold">{Object.values(rolePermissions).filter((x) => x.length < allPermissions.length).length}</p>
+        </div>
+      </div>
 
       <div className="bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#2a2a2a] rounded-xl flex-1 overflow-hidden flex flex-col shadow-sm">
         <div className="p-4 md:p-5 border-b border-gray-200 dark:border-[#2a2a2a] bg-gray-50 dark:bg-[#0a0a0a] flex items-center gap-2">

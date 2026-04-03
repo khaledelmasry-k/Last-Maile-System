@@ -51,14 +51,21 @@ export const LiveMap = () => {
     : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 
   return (
-    <div className="flex flex-col h-full text-gray-900 dark:text-white transition-colors duration-200">
-      <header className="p-8 pb-4">
+    <div className="page-wrap flex flex-col h-full text-gray-900 dark:text-white transition-colors duration-200">
+      <header className="mb-6">
         <h1 className="text-3xl font-bold font-sans tracking-tight">{t('Live Tracking')}</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1 font-mono text-sm uppercase">{t('Real-time Courier & Shipment Locations')}</p>
       </header>
 
-      <div className="flex-1 p-8 pt-0 relative z-0">
-        <div className="w-full h-full rounded-xl overflow-hidden border border-gray-200 dark:border-[#2a2a2a] shadow-2xl">
+      <div className="flex-1 relative z-0">
+        <div className="w-full h-full rounded-xl overflow-hidden border border-gray-200 dark:border-[#2a2a2a] shadow-2xl relative">
+          {activeCouriers.length === 0 && activeShipments.length === 0 ? (
+            <div className="absolute inset-0 z-[500] pointer-events-none flex items-center justify-center bg-black/20">
+              <div className="pointer-events-auto rounded-xl border border-gray-200 dark:border-[#333] bg-white/95 dark:bg-[#121212]/95 px-4 py-3 text-sm font-mono text-gray-700 dark:text-gray-300">
+                {t('No live courier locations yet.')}
+              </div>
+            </div>
+          ) : null}
           <MapContainer 
             center={[30.0444, 31.2357]} // Cairo center
             zoom={12} 

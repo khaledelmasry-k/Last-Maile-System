@@ -33,7 +33,7 @@ export const AdminDashboard = () => {
   };
 
   return (
-    <div className="p-8 text-gray-900 dark:text-white transition-colors duration-200">
+    <div className="page-wrap text-gray-900 dark:text-white transition-colors duration-200">
       <header className="mb-8">
         <h1 className="text-3xl font-bold font-sans tracking-tight">{t('System Overview')}</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1 font-mono text-sm uppercase">{t('Real-time Last-Mile Metrics')}</p>
