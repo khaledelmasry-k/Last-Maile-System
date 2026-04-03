@@ -124,10 +124,10 @@ export const DispatchPortal = () => {
     <div className="page-wrap h-full flex flex-col">
       <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold font-sans tracking-tight">{t('Dispatch Portal')}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 font-mono text-sm uppercase">{t('Assign Shipments to Couriers')}</p>
+          <h1 className="text-2xl md:text-3xl font-bold font-sans tracking-tight">{t('Dispatch Portal')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 font-mono text-xs md:text-sm uppercase">{t('Assign Shipments to Couriers')}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             ref={fileInputRef}
             type="file"

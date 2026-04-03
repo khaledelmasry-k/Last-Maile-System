@@ -33,8 +33,8 @@ export const Finance = () => {
   return (
     <div className="page-wrap h-full flex flex-col">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold font-sans tracking-tight">{t('Finance & COD')}</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1 font-mono text-sm uppercase">{t('Settle Cash on Delivery')}</p>
+        <h1 className="text-2xl md:text-3xl font-bold font-sans tracking-tight">{t('Finance & COD')}</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1 font-mono text-xs md:text-sm uppercase">{t('Settle Cash on Delivery')}</p>
       </header>
 
       {message ? <p className="mb-3 text-sm text-blue-600 dark:text-blue-400">{message}</p> : null}
