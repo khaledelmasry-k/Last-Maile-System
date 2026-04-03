@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: lastmile-laravel-api
+    runtime: docker
+    rootDir: laravel-api
+    plan: free
+    autoDeploy: true

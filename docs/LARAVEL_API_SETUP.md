@@ -45,7 +45,23 @@ Then run frontend as usual; it will call Laravel `/api/*` endpoints through this
 - Example applied:
   - `POST /api/couriers` → `role:Admin,Dispatcher`
 
-## 6) Notes
+## 6) Deploy on Render
+
+This repo includes `render.yaml` and `laravel-api/Dockerfile`.
+
+1. In Render dashboard: **New + → Blueprint**
+2. Select this GitHub repo and branch `main`
+3. Render will detect `render.yaml` and create service `lastmile-laravel-api`
+4. After deploy, copy API URL (example: `https://lastmile-laravel-api.onrender.com`)
+5. In frontend env set:
+
+```env
+VITE_API_BASE=https://lastmile-laravel-api.onrender.com
+```
+
+Then redeploy frontend to Firebase.
+
+## 7) Notes
 
 - CORS is open by default in `config/cors.php`.
 - If needed in production, restrict `allowed_origins`.
