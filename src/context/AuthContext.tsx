@@ -21,9 +21,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const ACCESS_TOKEN_KEY = 'lm-auth-token';
-const REFRESH_TOKEN_KEY = 'lm-refresh-token';
 const USER_KEY = 'lm-user';
 const DEMO_TOKEN = 'demo-token';
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || '';
+
+const withBase = (url: string) => {
+  if (/^https?:\/\//.test(url)) return url;
+  if (!API_BASE) return url;
+  return `${API_BASE}${url}`;
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(() => {
@@ -35,37 +41,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(ACCESS_TOKEN_KEY));
-  const [refreshToken, setRefreshToken] = useState<string | null>(() => localStorage.getItem(REFRESH_TOKEN_KEY));
   const [loading, setLoading] = useState(true);
 
   const clearAuth = () => {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     setToken(null);
-    setRefreshToken(null);
     setUser(null);
-  };
-
-  const tryRefresh = async () => {
-    if (!refreshToken) return false;
-    try {
-      const res = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.accessToken) return false;
-      localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user || null));
-      setToken(data.accessToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user || null));
-      setUser(data.user || null);
-      return true;
-    } catch {
-      return false;
-    }
   };
 
   useEffect(() => {
@@ -79,72 +61,61 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       try {
-        const res = await fetch('/api/auth/me', {
+        const res = await fetch(withBase('/api/me'), {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error('Session expired');
         const data = await res.json();
-        localStorage.setItem(USER_KEY, JSON.stringify(data.user || null));
-        setUser(data.user || null);
+        const nextUser = (data.user || data) as User;
+        localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+        setUser(nextUser);
       } catch {
-        const refreshed = await tryRefresh();
-        if (!refreshed) clearAuth();
+        clearAuth();
       } finally {
         setLoading(false);
       }
     };
     bootstrap();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const apiFetch = async (url: string, options: RequestInit = {}) => {
-    const call = async (access: string | null) => {
-      const headers = new Headers(options.headers || {});
-      if (access) headers.set('Authorization', `Bearer ${access}`);
-      const response = await fetch(url, { ...options, headers });
-      const payload = await response.json().catch(() => ({}));
-      return { response, payload };
-    };
+    const headers = new Headers(options.headers || {});
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+    const response = await fetch(withBase(url), { ...options, headers });
+    const payload = await response.json().catch(() => ({}));
 
-    let { response, payload } = await call(token);
     if (response.status === 401) {
-      const refreshed = await tryRefresh();
-      if (refreshed) {
-        const nextToken = localStorage.getItem(ACCESS_TOKEN_KEY);
-        ({ response, payload } = await call(nextToken));
-      }
+      clearAuth();
+      throw new Error('Unauthorized');
     }
 
     if (!response.ok) {
-      throw new Error(payload.error || 'Request failed');
+      throw new Error(payload.message || payload.error || 'Request failed');
     }
     return payload;
   };
 
   const login = async (email: string, password: string, role: UserRole) => {
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(withBase('/api/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, role }),
       });
       const data = await res.json();
-      if (!res.ok) return { ok: false, error: data.error || 'Login failed' };
+      if (!res.ok) return { ok: false, error: data.message || data.error || 'Login failed' };
 
+      const nextUser = (data.user || {}) as User;
       localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
-      localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
       setToken(data.accessToken);
-      setRefreshToken(data.refreshToken);
-      setUser(data.user);
+      setUser(nextUser);
       return { ok: true };
     } catch {
       const demoUser = { id: `DEMO-${role}`, name: email.split('@')[0] || role, email, role } as User;
       localStorage.setItem(ACCESS_TOKEN_KEY, DEMO_TOKEN);
-      localStorage.removeItem(REFRESH_TOKEN_KEY);
       localStorage.setItem(USER_KEY, JSON.stringify(demoUser));
       setToken(DEMO_TOKEN);
-      setRefreshToken(null);
       setUser(demoUser);
       return { ok: true };
     }
@@ -152,14 +123,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      if (token) {
-        await fetch('/api/auth/logout', {
+      if (token && token !== DEMO_TOKEN) {
+        await fetch(withBase('/api/logout'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ refreshToken }),
         });
       }
     } catch {

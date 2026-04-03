@@ -30,7 +30,13 @@ API base: `http://127.0.0.1:8000/api`
 
 ## 4) Connect React app
 
-In frontend, set API base to `http://127.0.0.1:8000` and call `/api/*` from Laravel.
+Create `.env` in project root (frontend) and set:
+
+```env
+VITE_API_BASE=http://127.0.0.1:8000
+```
+
+Then run frontend as usual; it will call Laravel `/api/*` endpoints through this base.
 
 ## 5) Access Control (Server-side)
 

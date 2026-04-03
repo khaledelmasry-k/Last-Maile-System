@@ -109,11 +109,33 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const [shipmentsPayload, couriersPayload] = await Promise.all([
-        apiFetch('/api/shipments?limit=500'),
+        apiFetch('/api/shipments'),
         apiFetch('/api/couriers'),
       ]);
-      setShipments((shipmentsPayload as { data: Shipment[] }).data || []);
-      setCouriers((couriersPayload as Courier[]) || []);
+
+      const mappedShipments = ((shipmentsPayload as any[]) || []).map((s) => ({
+        id: String(s.id),
+        trackingNumber: s.trackingNumber || s.tracking_number,
+        customerName: s.customerName || s.customer_name,
+        phone: s.phone,
+        address: s.address,
+        codAmount: Number(s.codAmount ?? s.cod_amount ?? 0),
+        status: s.status,
+        assignedTo: s.assignedTo || s.assigned_to || null,
+        timeline: s.timeline || [],
+        meta: s.meta || {},
+      })) as Shipment[];
+
+      const mappedCouriers = ((couriersPayload as any[]) || []).map((c) => ({
+        id: c.code || c.id,
+        name: c.name,
+        phone: c.phone,
+        vehicle: c.vehicle,
+        active: !!c.active,
+      })) as Courier[];
+
+      setShipments(mappedShipments);
+      setCouriers(mappedCouriers);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to fetch data';
       setError(msg);
@@ -141,7 +163,14 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
     const interval = setInterval(async () => {
       try {
         const couriersData = await apiFetch('/api/couriers');
-        setCouriers((couriersData as Courier[]) || []);
+        const mappedCouriers = ((couriersData as any[]) || []).map((c) => ({
+          id: c.code || c.id,
+          name: c.name,
+          phone: c.phone,
+          vehicle: c.vehicle,
+          active: !!c.active,
+        })) as Courier[];
+        setCouriers(mappedCouriers);
       } catch {
         // silent polling failure
       }
@@ -168,12 +197,12 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      const updatedShipment = (await apiFetch(`/api/shipments/${shipmentId}/assign`, {
+      await apiFetch(`/api/shipments/${shipmentId}/assign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ courierId }),
-      })) as Shipment;
-      setShipments((prev) => prev.map((s) => (s.id === shipmentId ? updatedShipment : s)));
+      });
+      await fetchData();
       return { ok: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to assign shipment';
@@ -200,12 +229,12 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      const updatedShipment = (await apiFetch(`/api/shipments/${shipmentId}/status`, {
+      await apiFetch(`/api/shipments/${shipmentId}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, note }),
-      })) as Shipment;
-      setShipments((prev) => prev.map((s) => (s.id === shipmentId ? updatedShipment : s)));
+      });
+      await fetchData();
       return { ok: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to update shipment status';
@@ -215,22 +244,6 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const importShipmentsFromSheet = async (rows: Record<string, unknown>[]) => {
-    if (token && token !== DEMO_TOKEN) {
-      try {
-        const result = (await apiFetch('/api/shipments/import', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rows }),
-        })) as { ok: boolean; added: number; skipped: number; errors: string[] };
-        await fetchData();
-        return result;
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Import failed';
-        setError(msg);
-        return { ok: false, added: 0, skipped: 0, errors: [msg] };
-      }
-    }
-
     const errors: string[] = [];
     const mapped: Shipment[] = [];
 
@@ -258,6 +271,15 @@ export const LogisticsProvider = ({ children }: { children: ReactNode }) => {
 
   const settleCourierDeliveries = async (courierId: string) => {
     try {
+      if (token && token !== DEMO_TOKEN) {
+        const result = (await apiFetch(`/api/finance/settle/${courierId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        })) as { ok: boolean; settled: number };
+        await fetchData();
+        return { ok: true, settled: result.settled || 0 };
+      }
+
       let settled = 0;
       setShipments((prev) =>
         prev.map((s) => {
